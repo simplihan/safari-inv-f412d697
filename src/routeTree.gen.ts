@@ -13,6 +13,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppStaffRouteImport } from './routes/app.staff'
 import { Route as AppPendingRouteImport } from './routes/app.pending'
 import { Route as AppMonitoringRouteImport } from './routes/app.monitoring'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
@@ -36,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppStaffRoute = AppStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppPendingRoute = AppPendingRouteImport.update({
   id: '/pending',
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/staff': typeof AppStaffRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/staff': typeof AppStaffRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/staff': typeof AppStaffRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/monitoring'
     | '/app/pending'
+    | '/app/staff'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/monitoring'
     | '/app/pending'
+    | '/app/staff'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/monitoring'
     | '/app/pending'
+    | '/app/staff'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -148,6 +160,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/staff': {
+      id: '/app/staff'
+      path: '/staff'
+      fullPath: '/app/staff'
+      preLoaderRoute: typeof AppStaffRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/pending': {
       id: '/app/pending'
       path: '/pending'
@@ -176,12 +195,14 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppMonitoringRoute: typeof AppMonitoringRoute
   AppPendingRoute: typeof AppPendingRoute
+  AppStaffRoute: typeof AppStaffRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppMonitoringRoute: AppMonitoringRoute,
   AppPendingRoute: AppPendingRoute,
+  AppStaffRoute: AppStaffRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -195,3 +216,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
