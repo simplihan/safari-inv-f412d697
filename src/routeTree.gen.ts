@@ -15,6 +15,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppTimelineRouteImport } from './routes/app.timeline'
 import { Route as AppStaffRouteImport } from './routes/app.staff'
+import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPendingRouteImport } from './routes/app.pending'
 import { Route as AppMonitoringRouteImport } from './routes/app.monitoring'
@@ -50,6 +51,11 @@ const AppStaffRoute = AppStaffRouteImport.update({
   path: '/staff',
   getParentRoute: () => AppRoute,
 } as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/pending': typeof AppPendingRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/staff': typeof AppStaffRoute
   '/app/timeline': typeof AppTimelineRoute
 }
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/pending': typeof AppPendingRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/staff': typeof AppStaffRoute
   '/app/timeline': typeof AppTimelineRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/pending': typeof AppPendingRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/staff': typeof AppStaffRoute
   '/app/timeline': typeof AppTimelineRoute
 }
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/app/monitoring'
     | '/app/pending'
     | '/app/profile'
+    | '/app/reports'
     | '/app/staff'
     | '/app/timeline'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/app/monitoring'
     | '/app/pending'
     | '/app/profile'
+    | '/app/reports'
     | '/app/staff'
     | '/app/timeline'
   id:
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/app/monitoring'
     | '/app/pending'
     | '/app/profile'
+    | '/app/reports'
     | '/app/staff'
     | '/app/timeline'
   fileRoutesById: FileRoutesById
@@ -198,6 +210,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStaffRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/reports': {
+      id: '/app/reports'
+      path: '/reports'
+      fullPath: '/app/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/profile': {
       id: '/app/profile'
       path: '/profile'
@@ -234,6 +253,7 @@ interface AppRouteChildren {
   AppMonitoringRoute: typeof AppMonitoringRoute
   AppPendingRoute: typeof AppPendingRoute
   AppProfileRoute: typeof AppProfileRoute
+  AppReportsRoute: typeof AppReportsRoute
   AppStaffRoute: typeof AppStaffRoute
   AppTimelineRoute: typeof AppTimelineRoute
 }
@@ -243,6 +263,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMonitoringRoute: AppMonitoringRoute,
   AppPendingRoute: AppPendingRoute,
   AppProfileRoute: AppProfileRoute,
+  AppReportsRoute: AppReportsRoute,
   AppStaffRoute: AppStaffRoute,
   AppTimelineRoute: AppTimelineRoute,
 }
@@ -258,3 +279,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
