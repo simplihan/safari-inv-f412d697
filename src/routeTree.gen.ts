@@ -13,6 +13,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppTimelineRouteImport } from './routes/app.timeline'
 import { Route as AppStaffRouteImport } from './routes/app.staff'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPendingRouteImport } from './routes/app.pending'
@@ -38,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppTimelineRoute = AppTimelineRouteImport.update({
+  id: '/timeline',
+  path: '/timeline',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppStaffRoute = AppStaffRouteImport.update({
   id: '/staff',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/app/pending': typeof AppPendingRoute
   '/app/profile': typeof AppProfileRoute
   '/app/staff': typeof AppStaffRoute
+  '/app/timeline': typeof AppTimelineRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/app/pending': typeof AppPendingRoute
   '/app/profile': typeof AppProfileRoute
   '/app/staff': typeof AppStaffRoute
+  '/app/timeline': typeof AppTimelineRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/app/pending': typeof AppPendingRoute
   '/app/profile': typeof AppProfileRoute
   '/app/staff': typeof AppStaffRoute
+  '/app/timeline': typeof AppTimelineRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/app/pending'
     | '/app/profile'
     | '/app/staff'
+    | '/app/timeline'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/app/pending'
     | '/app/profile'
     | '/app/staff'
+    | '/app/timeline'
   id:
     | '__root__'
     | '/'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/app/pending'
     | '/app/profile'
     | '/app/staff'
+    | '/app/timeline'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,6 +183,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/timeline': {
+      id: '/app/timeline'
+      path: '/timeline'
+      fullPath: '/app/timeline'
+      preLoaderRoute: typeof AppTimelineRouteImport
+      parentRoute: typeof AppRoute
     }
     '/app/staff': {
       id: '/app/staff'
@@ -216,6 +235,7 @@ interface AppRouteChildren {
   AppPendingRoute: typeof AppPendingRoute
   AppProfileRoute: typeof AppProfileRoute
   AppStaffRoute: typeof AppStaffRoute
+  AppTimelineRoute: typeof AppTimelineRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -224,6 +244,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPendingRoute: AppPendingRoute,
   AppProfileRoute: AppProfileRoute,
   AppStaffRoute: AppStaffRoute,
+  AppTimelineRoute: AppTimelineRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
