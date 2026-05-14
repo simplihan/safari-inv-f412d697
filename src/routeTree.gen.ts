@@ -20,6 +20,7 @@ import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPendingRouteImport } from './routes/app.pending'
 import { Route as AppMonitoringRouteImport } from './routes/app.monitoring'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
+import { Route as AppCommonRouteImport } from './routes/app.common'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -76,12 +77,18 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCommonRoute = AppCommonRouteImport.update({
+  id: '/common',
+  path: '/common',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/app/common': typeof AppCommonRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/pending': typeof AppPendingRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/app/common': typeof AppCommonRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/pending': typeof AppPendingRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/app/common': typeof AppCommonRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/pending': typeof AppPendingRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/register'
+    | '/app/common'
     | '/app/dashboard'
     | '/app/monitoring'
     | '/app/pending'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/register'
+    | '/app/common'
     | '/app/dashboard'
     | '/app/monitoring'
     | '/app/pending'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/register'
+    | '/app/common'
     | '/app/dashboard'
     | '/app/monitoring'
     | '/app/pending'
@@ -245,10 +257,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/common': {
+      id: '/app/common'
+      path: '/common'
+      fullPath: '/app/common'
+      preLoaderRoute: typeof AppCommonRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppCommonRoute: typeof AppCommonRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppMonitoringRoute: typeof AppMonitoringRoute
   AppPendingRoute: typeof AppPendingRoute
@@ -259,6 +279,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppCommonRoute: AppCommonRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppMonitoringRoute: AppMonitoringRoute,
   AppPendingRoute: AppPendingRoute,
@@ -279,3 +300,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
