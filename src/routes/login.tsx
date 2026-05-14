@@ -12,13 +12,24 @@ export const Route = createFileRoute("/login")({ component: Login });
 
 function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [mode, setMode] = useState<"email" | "sgc">("email");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    let email = identifier.trim();
+    if (mode === "sgc") {
+      const { data: resolved, error: rpcErr } = await supabase.rpc("get_email_by_sgc", { _sgc: identifier.trim() });
+      if (rpcErr || !resolved) {
+        toast.error("No account found for that SGC ID.");
+        setLoading(false);
+        return;
+      }
+      email = resolved as string;
+    }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast.error(error.message);
@@ -63,10 +74,27 @@ function Login() {
         </Link>
         <h1 className="text-2xl font-bold text-center">Welcome back</h1>
         <p className="text-sm text-muted-foreground text-center mt-1">Sign in to continue</p>
+        <div className="mt-5 grid grid-cols-2 gap-1 p-1 rounded-xl bg-muted/40">
+          <button type="button" onClick={() => setMode("email")}
+            className={`text-sm py-2 rounded-lg font-medium transition ${mode === "email" ? "gradient-primary text-primary-foreground shadow" : "text-muted-foreground"}`}>
+            Email
+          </button>
+          <button type="button" onClick={() => setMode("sgc")}
+            className={`text-sm py-2 rounded-lg font-medium transition ${mode === "sgc" ? "gradient-primary text-primary-foreground shadow" : "text-muted-foreground"}`}>
+            SGC ID
+          </button>
+        </div>
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div>
-            <Label>Email</Label>
-            <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" />
+            <Label>{mode === "email" ? "Email" : "SGC ID"}</Label>
+            <Input
+              type={mode === "email" ? "email" : "text"}
+              required
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder={mode === "email" ? "you@company.com" : "SGC2931"}
+              className="mt-1"
+            />
           </div>
           <div>
             <Label>Password</Label>
