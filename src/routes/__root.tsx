@@ -81,6 +81,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "PulseHR — Break & Activity Tracking" },
+      { name: "twitter:description", content: "Realtime break and outside-activity tracking for modern HR teams." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/211c6570-83b3-44a2-b408-84d8bfa1dfab/id-preview-cc582c5f--e3385a8f-325b-48ff-beb8-006d331f2aa2.lovable.app-1778735335230.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/211c6570-83b3-44a2-b408-84d8bfa1dfab/id-preview-cc582c5f--e3385a8f-325b-48ff-beb8-006d331f2aa2.lovable.app-1778735335230.png" },
     ],
     links: [
       {
