@@ -104,6 +104,9 @@ function Login() {
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
           </Button>
         </form>
+        <p className="mt-4 text-sm text-center">
+          <Link to="/forgot-password" className="text-primary font-medium hover:underline">Forgot password?</Link>
+        </p>
         <p className="mt-6 text-sm text-center text-muted-foreground">
           No account? <Link to="/register" className="text-primary font-medium">Request access</Link>
         </p>
