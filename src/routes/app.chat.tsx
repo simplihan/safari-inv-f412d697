@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Search, MessageCircle } from "lucide-react";
+import { Send, Search, MessageCircle, Check, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -17,14 +17,25 @@ export const Route = createFileRoute("/app/chat")({ component: Chat });
 type Person = { id: string; full_name: string; department: string | null; profile_image: string | null };
 type Msg = { id: string; sender_id: string; recipient_id: string; content: string; created_at: string; read_at: string | null };
 
+function formatWhen(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  if (d.toDateString() === yest.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
 function Chat() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [people, setPeople] = useState<Person[]>([]);
   const [active, setActive] = useState<Person | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [draft, setDraft] = useState("");
   const [q, setQ] = useState("");
   const [unread, setUnread] = useState<Record<string, number>>({});
+  const [lastMsg, setLastMsg] = useState<Record<string, Msg>>({});
   const endRef = useRef<HTMLDivElement>(null);
 
   // load contacts (everyone visible to me — RLS handles dept scoping)
@@ -39,19 +50,24 @@ function Chat() {
     })();
   }, [user?.id]);
 
-  // load unread counts
-  const loadUnread = async () => {
+  // load unread counts + last message per peer
+  const loadOverview = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("messages")
-      .select("sender_id")
-      .eq("recipient_id", user.id)
-      .is("read_at", null);
+    const [{ data: unreadRows }, { data: recent }] = await Promise.all([
+      supabase.from("messages").select("sender_id").eq("recipient_id", user.id).is("read_at", null),
+      supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(500),
+    ]);
     const counts: Record<string, number> = {};
-    (data ?? []).forEach((m: any) => { counts[m.sender_id] = (counts[m.sender_id] ?? 0) + 1; });
+    (unreadRows ?? []).forEach((m: any) => { counts[m.sender_id] = (counts[m.sender_id] ?? 0) + 1; });
     setUnread(counts);
+    const last: Record<string, Msg> = {};
+    (recent ?? []).forEach((m: any) => {
+      const peer = m.sender_id === user.id ? m.recipient_id : m.sender_id;
+      if (!last[peer]) last[peer] = m as Msg;
+    });
+    setLastMsg(last);
   };
-  useEffect(() => { loadUnread(); }, [user?.id]);
+  useEffect(() => { loadOverview(); }, [user?.id]);
 
   // load conversation
   const loadConvo = async (other: Person) => {
@@ -65,7 +81,7 @@ function Chat() {
     // mark read
     await supabase.from("messages").update({ read_at: new Date().toISOString() })
       .eq("recipient_id", user.id).eq("sender_id", other.id).is("read_at", null);
-    loadUnread();
+    loadOverview();
   };
 
   useEffect(() => { if (active) loadConvo(active); /* eslint-disable-next-line */ }, [active?.id]);
@@ -78,6 +94,8 @@ function Chat() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         const m = payload.new as Msg;
         if (m.recipient_id !== user.id && m.sender_id !== user.id) return;
+        const peer = m.sender_id === user.id ? m.recipient_id : m.sender_id;
+        setLastMsg((prev) => ({ ...prev, [peer]: m }));
         if (active && (m.sender_id === active.id || m.recipient_id === active.id)) {
           setMessages((prev) => [...prev, m]);
           if (m.recipient_id === user.id) {
@@ -103,54 +121,103 @@ function Chat() {
     if (error) setDraft(text);
   };
 
+  // Sort: people with conversations first (by last msg time), then the rest alphabetically.
+  const sorted = useMemo(() => {
+    const withMsg = people.filter((p) => lastMsg[p.id]);
+    const without = people.filter((p) => !lastMsg[p.id]);
+    withMsg.sort((a, b) => (lastMsg[b.id]?.created_at ?? "").localeCompare(lastMsg[a.id]?.created_at ?? ""));
+    return [...withMsg, ...without];
+  }, [people, lastMsg]);
   const filtered = useMemo(
-    () => people.filter((p) => p.full_name.toLowerCase().includes(q.toLowerCase())),
-    [people, q]
+    () => sorted.filter((p) => p.full_name.toLowerCase().includes(q.toLowerCase())),
+    [sorted, q]
   );
+
+  const sameDept = (p: Person) =>
+    !!profile?.department && p.department === profile.department;
+  const canMessage = active ? sameDept(active) : false;
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Chat</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Private 1-on-1 messages. Auto-deleted after 10 days.</p>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Private 1-on-1 messages within your department · Auto-deleted after 10 days
+        </p>
       </div>
-      <Card className="glass-strong overflow-hidden grid grid-cols-[280px_1fr] h-[calc(100vh-220px)] min-h-[500px]">
+      <Card className="glass-strong overflow-hidden grid grid-cols-[320px_1fr] h-[calc(100vh-220px)] min-h-[520px]">
         {/* Sidebar */}
         <aside className="border-r border-border flex flex-col">
-          <div className="p-3 border-b border-border">
+          <div className="p-3 border-b border-border space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Chats
+              </p>
+              {profile?.department && (
+                <Badge variant="secondary" className="text-[10px]">{profile.department}</Badge>
+              )}
+            </div>
             <div className="relative">
               <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search people" className="pl-8" />
             </div>
           </div>
           <ScrollArea className="flex-1">
-            <ul>
-              {filtered.map((p) => (
-                <li key={p.id}>
-                  <button
-                    onClick={() => setActive(p)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-accent/40 transition-colors",
-                      active?.id === p.id && "bg-accent/60"
-                    )}
-                  >
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={p.profile_image ?? undefined} />
-                      <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
-                        {p.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{p.full_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{p.department ?? "—"}</p>
-                    </div>
-                    {unread[p.id] > 0 && (
-                      <Badge className="gradient-primary text-primary-foreground border-0">{unread[p.id]}</Badge>
-                    )}
-                  </button>
-                </li>
-              ))}
-              {filtered.length === 0 && <p className="text-sm text-muted-foreground p-4 text-center">No people found</p>}
+            <ul className="py-1">
+              {filtered.map((p) => {
+                const last = lastMsg[p.id];
+                const mineLast = last && last.sender_id === user?.id;
+                const preview = last?.content ?? (sameDept(p) ? "Say hi 👋" : "Different department");
+                return (
+                  <li key={p.id}>
+                    <button
+                      onClick={() => setActive(p)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-accent/40 transition-colors",
+                        active?.id === p.id && "bg-accent/60"
+                      )}
+                    >
+                      <Avatar className="h-11 w-11">
+                        <AvatarImage src={p.profile_image ?? undefined} />
+                        <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
+                          {p.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium truncate">{p.full_name}</p>
+                          {last && (
+                            <span className="text-[10px] text-muted-foreground shrink-0">
+                              {formatWhen(last.created_at)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between gap-2 mt-0.5">
+                          <p className={cn(
+                            "text-xs truncate flex items-center gap-1",
+                            unread[p.id] > 0 ? "text-foreground font-medium" : "text-muted-foreground"
+                          )}>
+                            {mineLast && (
+                              last?.read_at
+                                ? <CheckCheck className="h-3 w-3 text-primary shrink-0" />
+                                : <Check className="h-3 w-3 shrink-0" />
+                            )}
+                            <span className="truncate">{preview}</span>
+                          </p>
+                          {unread[p.id] > 0 && (
+                            <Badge className="gradient-primary text-primary-foreground border-0 h-5 min-w-5 px-1.5 text-[10px]">
+                              {unread[p.id]}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+              {filtered.length === 0 && (
+                <p className="text-sm text-muted-foreground p-4 text-center">No people found</p>
+              )}
             </ul>
           </ScrollArea>
         </aside>
@@ -173,12 +240,12 @@ function Chat() {
                     {active.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
                   </AvatarFallback>
                 </Avatar>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-medium leading-tight">{active.full_name}</p>
                   <p className="text-xs text-muted-foreground">{active.department ?? "—"}</p>
                 </div>
               </header>
-              <ScrollArea className="flex-1 px-4 py-4">
+              <ScrollArea className="flex-1 px-4 py-4 bg-gradient-to-b from-transparent to-accent/10">
                 <div className="space-y-2">
                   {messages.map((m) => {
                     const mine = m.sender_id === user?.id;
@@ -193,25 +260,52 @@ function Chat() {
                           mine ? "gradient-primary text-primary-foreground rounded-br-sm" : "bg-accent/60 rounded-bl-sm"
                         )}>
                           <p className="whitespace-pre-wrap break-words">{m.content}</p>
-                          <p className={cn("text-[10px] mt-1 opacity-70", mine ? "text-right" : "")}>
-                            {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          <p className={cn(
+                            "text-[10px] mt-1 opacity-70 flex items-center gap-1",
+                            mine ? "justify-end" : ""
+                          )}>
+                            <span>{new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            {mine && (m.read_at
+                              ? <CheckCheck className="h-3 w-3" />
+                              : <Check className="h-3 w-3" />
+                            )}
                           </p>
                         </div>
                       </motion.div>
                     );
                   })}
+                  {messages.length === 0 && (
+                    <p className="text-center text-xs text-muted-foreground py-8">
+                      No messages yet. Start the conversation.
+                    </p>
+                  )}
                   <div ref={endRef} />
                 </div>
               </ScrollArea>
-              <form
-                onSubmit={(e) => { e.preventDefault(); send(); }}
-                className="border-t border-border p-3 flex items-center gap-2"
-              >
-                <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Type a message…" />
-                <Button type="submit" className="gradient-primary text-primary-foreground border-0" disabled={!draft.trim()}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
+              {canMessage ? (
+                <form
+                  onSubmit={(e) => { e.preventDefault(); send(); }}
+                  className="border-t border-border p-3 flex items-center gap-2"
+                >
+                  <Input
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    placeholder="Type a message…"
+                    autoFocus
+                  />
+                  <Button
+                    type="submit"
+                    className="gradient-primary text-primary-foreground border-0"
+                    disabled={!draft.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
+              ) : (
+                <div className="border-t border-border p-3 text-center text-xs text-muted-foreground">
+                  You can only message people in your own department.
+                </div>
+              )}
             </>
           )}
         </section>
