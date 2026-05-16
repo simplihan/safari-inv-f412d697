@@ -29,6 +29,7 @@ function Register() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.department) return toast.error("Select a department");
     setLoading(true);
     const redirectUrl = `${window.location.origin}/login`;
     const { error } = await supabase.auth.signUp({
