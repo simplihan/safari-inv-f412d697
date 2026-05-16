@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { fmtTime, fmtDuration, liveDuration } from "@/lib/format";
 import { PieChart as PieIcon } from "lucide-react";
@@ -27,9 +28,10 @@ type Row = {
 };
 
 function Common() {
-  const { user } = useAuth();
+  const { user, profile, canManage } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [showChart, setShowChart] = useState(false);
+  const [pieUserId, setPieUserId] = useState<string>("");
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -62,25 +64,52 @@ function Common() {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
-  // Pie chart data: today's break minutes vs working minutes (within 10h duty)
-  const myBreakMin = useMemo(() => {
+  // people visible to me today (RLS already restricts to my dept unless I'm admin/manager)
+  const people = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; dept: string | null }>();
+    rows.forEach((r) => {
+      if (!map.has(r.user_id)) {
+        map.set(r.user_id, {
+          id: r.user_id,
+          name: r.profile?.full_name ?? "Unknown",
+          dept: r.profile?.department ?? null,
+        });
+      }
+    });
+    if (user && profile && !map.has(user.id)) {
+      map.set(user.id, { id: user.id, name: profile.full_name, dept: profile.department });
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows, user?.id, profile?.full_name, profile?.department]);
+
+  useEffect(() => {
+    if (!pieUserId && user?.id) setPieUserId(user.id);
+  }, [user?.id, pieUserId]);
+
+  const breakMinFor = (uid: string) => {
     let m = 0;
-    rows.filter((r) => r.user_id === user?.id).forEach((r) => {
+    rows.filter((r) => r.user_id === uid).forEach((r) => {
       if (r.duration_minutes != null) m += r.duration_minutes;
       else if (r.status === "out")
         m += Math.max(0, Math.round((Date.now() - new Date(r.out_time).getTime()) / 60000));
     });
     return m;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, user?.id, tick]);
+  };
 
-  const workingMin = Math.max(0, DUTY_MIN - myBreakMin);
-  const overMin = myBreakMin > DUTY_MIN ? myBreakMin - DUTY_MIN : 0;
+  const selectedBreakMin = useMemo(
+    () => (pieUserId ? breakMinFor(pieUserId) : 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pieUserId, rows, tick]
+  );
+  const selectedName =
+    people.find((p) => p.id === pieUserId)?.name ?? profile?.full_name ?? "—";
+  const workingMin = Math.max(0, DUTY_MIN - selectedBreakMin);
+  const overMin = selectedBreakMin > DUTY_MIN ? selectedBreakMin - DUTY_MIN : 0;
 
   const pieData = [
-    { name: "Working time", value: workingMin, color: "hsl(var(--primary))" },
-    { name: "Break / Outside", value: Math.min(myBreakMin, DUTY_MIN), color: "hsl(var(--warning, 38 92% 50%))" },
-    ...(overMin > 0 ? [{ name: "Over 10h", value: overMin, color: "hsl(var(--destructive))" }] : []),
+    { name: "Working time", value: workingMin },
+    { name: "Break / Outside", value: Math.min(selectedBreakMin, DUTY_MIN) },
+    ...(overMin > 0 ? [{ name: "Over 10h", value: overMin }] : []),
   ].filter((d) => d.value > 0);
 
   const COLORS = ["#6366f1", "#f59e0b", "#ef4444"];
@@ -90,17 +119,35 @@ function Common() {
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Common dashboard</h1>
-          <p className="text-muted-foreground mt-1">Today's time-outs &amp; time-ins from everyone</p>
+          <p className="text-muted-foreground mt-1">
+            {canManage
+              ? "Today's activity across all departments"
+              : `Today's activity — ${profile?.department ?? "your"} department`}
+          </p>
         </div>
         <Button onClick={() => setShowChart((s) => !s)} className="gradient-primary text-primary-foreground border-0">
-          <PieIcon className="h-4 w-4 mr-2" /> {showChart ? "Hide" : "Show"} my 10h breakdown
+          <PieIcon className="h-4 w-4 mr-2" /> {showChart ? "Hide" : "Show"} 10h breakdown
         </Button>
       </div>
 
       {showChart && (
         <Card className="glass-strong">
-          <CardHeader>
-            <CardTitle>My 10-hour duty — {fmtDuration(myBreakMin)} on breaks · {fmtDuration(workingMin)} working</CardTitle>
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <CardTitle>
+              {selectedName} — {fmtDuration(selectedBreakMin)} on breaks · {fmtDuration(workingMin)} working
+            </CardTitle>
+            <div className="w-full md:w-64">
+              <Select value={pieUserId} onValueChange={setPieUserId}>
+                <SelectTrigger><SelectValue placeholder="Pick a person" /></SelectTrigger>
+                <SelectContent>
+                  {people.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}{p.dept ? ` · ${p.dept}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-72">
