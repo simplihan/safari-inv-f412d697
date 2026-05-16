@@ -11,6 +11,7 @@ import {
   History,
   Menu,
   Globe,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,6 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const items = [
     { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true },
     { to: "/app/common", label: "Common Dashboard", icon: Globe, show: true },
+    { to: "/app/chat", label: "Chat", icon: MessageCircle, show: true },
     { to: "/app/monitoring", label: "Live Monitoring", icon: Activity, show: canManage },
     { to: "/app/timeline", label: "My Activity", icon: History, show: isStaff },
     { to: "/app/pending", label: "Pending Requests", icon: UserCheck, show: canManage },
