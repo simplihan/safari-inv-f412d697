@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DEPARTMENTS } from "@/lib/departments";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/register")({ component: Register });
@@ -27,6 +29,7 @@ function Register() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.department) return toast.error("Select a department");
     setLoading(true);
     const redirectUrl = `${window.location.origin}/login`;
     const { error } = await supabase.auth.signUp({
@@ -66,7 +69,15 @@ function Register() {
         <form onSubmit={onSubmit} className="mt-6 grid grid-cols-2 gap-4">
           <div className="col-span-2"><Label>Full name</Label><Input required value={form.full_name} onChange={set("full_name")} className="mt-1" /></div>
           <div><Label>SGC ID</Label><Input required value={form.sgc_id} onChange={set("sgc_id")} className="mt-1" /></div>
-          <div><Label>Department</Label><Input required value={form.department} onChange={set("department")} className="mt-1" /></div>
+          <div>
+            <Label>Department</Label>
+            <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
+              <SelectTrigger className="mt-1"><SelectValue placeholder="Select department" /></SelectTrigger>
+              <SelectContent>
+                {DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <div><Label>Mobile</Label><Input value={form.mobile} onChange={set("mobile")} className="mt-1" /></div>
           <div><Label>Email</Label><Input type="email" required value={form.email} onChange={set("email")} className="mt-1" /></div>
           <div className="col-span-2"><Label>Password</Label><Input type="password" required minLength={6} value={form.password} onChange={set("password")} className="mt-1" /></div>
