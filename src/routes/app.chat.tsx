@@ -147,6 +147,10 @@ function Chat() {
         if (m.recipient_id !== user.id && m.sender_id !== user.id) return;
         const peer = m.sender_id === user.id ? m.recipient_id : m.sender_id;
         setLastMsg((prev) => ({ ...prev, [peer]: m }));
+        // Mark delivered immediately when *I* am the recipient
+        if (m.recipient_id === user.id && !m.delivered_at) {
+          supabase.from("messages").update({ delivered_at: new Date().toISOString() }).eq("id", m.id);
+        }
         if (active && (m.sender_id === active.id || m.recipient_id === active.id)) {
           setMessages((prev) => [...prev, m]);
           if (m.recipient_id === user.id) {
