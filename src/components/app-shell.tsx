@@ -12,24 +12,51 @@ import {
   Menu,
   Globe,
   MessageCircle,
+  MessagesSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useState, ReactNode } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { profile, roles, signOut, canManage, isStaff } = useAuth();
+  const { profile, roles, signOut, canManage, isStaff, isAdmin } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
+  const [chatEnabled, setChatEnabled] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!profile?.department) { setChatEnabled(true); return; }
+      const { data } = await supabase
+        .from("dept_chat_settings")
+        .select("enabled")
+        .eq("department", profile.department)
+        .maybeSingle();
+      if (!cancelled) setChatEnabled(data?.enabled ?? true);
+    };
+    load();
+    const ch = supabase
+      .channel("dept-chat-settings")
+      .on("postgres_changes", { event: "*", schema: "public", table: "dept_chat_settings" }, load)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [profile?.department]);
+
+  // Admin/manager always see chat (to administrate); others only when enabled in their dept
+  const showChat = canManage || chatEnabled;
 
   const items = [
     { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true },
     { to: "/app/common", label: "Common Dashboard", icon: Globe, show: true },
-    { to: "/app/chat", label: "Chat", icon: MessageCircle, show: true },
+    { to: "/app/chat", label: "Chat", icon: MessageCircle, show: showChat },
+    { to: "/app/chat-settings", label: "Chat Settings", icon: MessagesSquare, show: canManage },
     { to: "/app/monitoring", label: "Live Monitoring", icon: Activity, show: canManage },
     { to: "/app/timeline", label: "My Activity", icon: History, show: isStaff },
     { to: "/app/pending", label: "Pending Requests", icon: UserCheck, show: canManage },
@@ -89,9 +116,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </div>
+        <div className="mb-2"><ThemeToggle /></div>
         <Button onClick={handleSignOut} variant="outline" size="sm" className="w-full">
           <LogOut className="h-4 w-4 mr-2" /> Sign out
         </Button>
+        {isAdmin && <p className="text-[10px] text-muted-foreground mt-2 px-1">Admin mode</p>}
       </div>
     </aside>
   );
