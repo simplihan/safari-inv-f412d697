@@ -129,8 +129,9 @@ function Chat() {
       .or(`and(sender_id.eq.${user.id},recipient_id.eq.${other.id}),and(sender_id.eq.${other.id},recipient_id.eq.${user.id})`)
       .order("created_at", { ascending: true });
     setMessages((data ?? []) as Msg[]);
-    // mark read
-    await supabase.from("messages").update({ read_at: new Date().toISOString() })
+    // mark delivered + read for messages I received
+    const now = new Date().toISOString();
+    await supabase.from("messages").update({ delivered_at: now, read_at: now })
       .eq("recipient_id", user.id).eq("sender_id", other.id).is("read_at", null);
     loadOverview();
   };
