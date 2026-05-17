@@ -23,6 +23,7 @@ import { Route as AppPendingRouteImport } from './routes/app.pending'
 import { Route as AppMonitoringRouteImport } from './routes/app.monitoring'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppCommonRouteImport } from './routes/app.common'
+import { Route as AppChatSettingsRouteImport } from './routes/app.chat-settings'
 import { Route as AppChatRouteImport } from './routes/app.chat'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -95,6 +96,11 @@ const AppCommonRoute = AppCommonRouteImport.update({
   path: '/common',
   getParentRoute: () => AppRoute,
 } as any)
+const AppChatSettingsRoute = AppChatSettingsRouteImport.update({
+  id: '/chat-settings',
+  path: '/chat-settings',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppChatRoute = AppChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/chat': typeof AppChatRoute
+  '/app/chat-settings': typeof AppChatSettingsRoute
   '/app/common': typeof AppCommonRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/monitoring': typeof AppMonitoringRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/chat': typeof AppChatRoute
+  '/app/chat-settings': typeof AppChatSettingsRoute
   '/app/common': typeof AppCommonRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/monitoring': typeof AppMonitoringRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/chat': typeof AppChatRoute
+  '/app/chat-settings': typeof AppChatSettingsRoute
   '/app/common': typeof AppCommonRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/monitoring': typeof AppMonitoringRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/app/chat'
+    | '/app/chat-settings'
     | '/app/common'
     | '/app/dashboard'
     | '/app/monitoring'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/app/chat'
+    | '/app/chat-settings'
     | '/app/common'
     | '/app/dashboard'
     | '/app/monitoring'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/app/chat'
+    | '/app/chat-settings'
     | '/app/common'
     | '/app/dashboard'
     | '/app/monitoring'
@@ -316,6 +328,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCommonRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/chat-settings': {
+      id: '/app/chat-settings'
+      path: '/chat-settings'
+      fullPath: '/app/chat-settings'
+      preLoaderRoute: typeof AppChatSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/chat': {
       id: '/app/chat'
       path: '/chat'
@@ -328,6 +347,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppChatRoute: typeof AppChatRoute
+  AppChatSettingsRoute: typeof AppChatSettingsRoute
   AppCommonRoute: typeof AppCommonRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppMonitoringRoute: typeof AppMonitoringRoute
@@ -340,6 +360,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppChatRoute: AppChatRoute,
+  AppChatSettingsRoute: AppChatSettingsRoute,
   AppCommonRoute: AppCommonRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppMonitoringRoute: AppMonitoringRoute,
@@ -363,3 +384,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
