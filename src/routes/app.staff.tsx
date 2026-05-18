@@ -14,7 +14,7 @@ import { Search, Pencil, UserPlus, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { adminCreateUser, adminResetPassword } from "@/lib/users.functions";
-import { DEPARTMENTS } from "@/lib/departments";
+import { useDepartments } from "@/hooks/use-departments";
 
 export const Route = createFileRoute("/app/staff")({ component: Staff });
 
@@ -103,6 +103,7 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
   const [role, setRole] = useState<string>("staff");
   const [newPwd, setNewPwd] = useState("");
   const resetPwd = useServerFn(adminResetPassword);
+  const { names: deptNames } = useDepartments();
   useEffect(() => {
     if (user) {
       setForm({
@@ -151,7 +152,7 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
             <Select value={form.department ?? ""} onValueChange={(v) => setForm({ ...form, department: v })}>
               <SelectTrigger><SelectValue placeholder="Pick…" /></SelectTrigger>
               <SelectContent>
-                {DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                {deptNames.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -201,9 +202,10 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
 
 function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const createFn = useServerFn(adminCreateUser);
+  const { names: deptNames } = useDepartments();
   const [form, setForm] = useState({
     full_name: "", email: "", password: "", sgc_id: "", mobile: "",
-    department: "Inventory" as (typeof DEPARTMENTS)[number],
+    department: "Inventory",
     role: "staff" as "admin" | "manager" | "staff",
     status: "approved" as "approved" | "pending" | "rejected",
   });
@@ -238,7 +240,7 @@ function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
             <Label>Department</Label>
             <Select value={form.department} onValueChange={(v: any) => setForm({ ...form, department: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+              <SelectContent>{deptNames.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div>
