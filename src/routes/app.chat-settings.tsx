@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { DEPARTMENTS } from "@/lib/departments";
+import { useDepartments } from "@/hooks/use-departments";
 import { toast } from "sonner";
 import { MessagesSquare } from "lucide-react";
 
@@ -16,11 +16,12 @@ type Row = { department: string; enabled: boolean };
 function ChatSettings() {
   const { canManage, isAdmin, profile } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
+  const { names: deptNames } = useDepartments();
 
   const load = async () => {
     const { data } = await supabase.from("dept_chat_settings").select("department, enabled");
     const map = new Map<string, boolean>((data ?? []).map((r: any) => [r.department, r.enabled]));
-    setRows(DEPARTMENTS.map((d) => ({ department: d, enabled: map.get(d) ?? true })));
+    setRows(deptNames.map((d) => ({ department: d, enabled: map.get(d) ?? true })));
   };
 
   useEffect(() => {
@@ -30,7 +31,7 @@ function ChatSettings() {
       .on("postgres_changes", { event: "*", schema: "public", table: "dept_chat_settings" }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [deptNames.join("|")]);
 
   if (!canManage) return <Navigate to="/app/dashboard" />;
 
