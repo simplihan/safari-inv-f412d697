@@ -9,7 +9,7 @@ const CreateInput = z.object({
   full_name: z.string().min(1).max(120),
   sgc_id: z.string().min(1).max(40),
   mobile: z.string().max(40).optional().nullable(),
-  department: z.enum(["Inventory", "Purchase", "Admin", "Customer Service"]),
+  department: z.string().min(1).max(120),
   role: z.enum(["admin", "manager", "staff"]).default("staff"),
   status: z.enum(["pending", "approved", "rejected"]).default("approved"),
 });
