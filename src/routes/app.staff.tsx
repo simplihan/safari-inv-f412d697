@@ -184,7 +184,7 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
             <div className="col-span-2 border-t border-border pt-3 mt-1">
               <Label className="flex items-center gap-2"><KeyRound className="h-3.5 w-3.5" /> Reset password</Label>
               <div className="flex gap-2 mt-1">
-                <Input type="text" placeholder="New password (min 8 chars)" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} />
+                <Input type="password" placeholder="New password (min 8 chars)" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} />
                 <Button variant="outline" onClick={doResetPwd} disabled={newPwd.length < 8}>Reset</Button>
               </div>
             </div>
@@ -233,7 +233,7 @@ function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
           <div><Label>SGC ID</Label><Input value={form.sgc_id} onChange={(e) => setForm({ ...form, sgc_id: e.target.value })} /></div>
           <div><Label>Mobile</Label><Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} /></div>
           <div className="col-span-2"><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-          <div className="col-span-2"><Label>Initial password</Label><Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="8+ characters" /></div>
+          <div className="col-span-2"><Label>Initial password</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="8+ characters" /></div>
           <div>
             <Label>Department</Label>
             <Select value={form.department} onValueChange={(v: any) => setForm({ ...form, department: v })}>
