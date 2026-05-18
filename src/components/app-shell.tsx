@@ -13,6 +13,7 @@ import {
   Globe,
   MessageCircle,
   MessagesSquare,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -57,6 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/app/common", label: "Common Dashboard", icon: Globe, show: true },
     { to: "/app/chat", label: "Chat", icon: MessageCircle, show: showChat },
     { to: "/app/chat-settings", label: "Chat Settings", icon: MessagesSquare, show: canManage },
+    { to: "/app/departments", label: "Departments", icon: Building2, show: isAdmin },
     { to: "/app/monitoring", label: "Live Monitoring", icon: Activity, show: canManage },
     { to: "/app/timeline", label: "My Activity", icon: History, show: isStaff },
     { to: "/app/pending", label: "Pending Requests", icon: UserCheck, show: canManage },
