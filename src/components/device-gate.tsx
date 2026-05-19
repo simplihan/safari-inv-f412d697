@@ -33,7 +33,7 @@ export function DeviceGate({ children }: { children: ReactNode }) {
         </div>
         <h1 className="text-2xl font-bold">Desktop only</h1>
         <p className="text-sm text-muted-foreground mt-2">
-          PulseHR is available on laptops &amp; desktops only. Please open this app on a computer
+          Pulse Inv is available on laptops &amp; desktops only. Please open this app on a computer
           with a screen width of at least 1024px.
         </p>
       </div>

@@ -35,7 +35,7 @@ function ForgotPassword() {
           <div className="h-10 w-10 rounded-xl gradient-primary grid place-items-center">
             <Activity className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-semibold">PulseHR</span>
+          <span className="font-semibold">Pulse Inv</span>
         </Link>
         <h1 className="text-2xl font-bold text-center">Forgot password?</h1>
         <p className="text-sm text-muted-foreground text-center mt-1">We'll email you a secure reset link.</p>

@@ -60,12 +60,12 @@ function Reports() {
     });
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `pulsehr-${from}-to-${to}.csv`; a.click();
+    const a = document.createElement("a"); a.href = url; a.download = `pulse-inv-${from}-to-${to}.csv`; a.click();
   };
 
   const exportPDF = () => {
     const doc = new jsPDF();
-    doc.text(`PulseHR Report  ${from} -> ${to}`, 14, 16);
+    doc.text(`Pulse Inv Report  ${from} -> ${to}`, 14, 16);
     autoTable(doc, {
       startY: 22,
       head: [["Name", "Department", "Reason", "Out", "In", "Min"]],
@@ -74,7 +74,7 @@ function Reports() {
         return [p?.full_name ?? "—", p?.department ?? "—", r.reason, fmtDateTime(r.out_time), fmtDateTime(r.in_time), r.duration_minutes ?? "—"];
       }),
     });
-    doc.save(`pulsehr-${from}-to-${to}.pdf`);
+    doc.save(`pulse-inv-${from}-to-${to}.pdf`);
   };
 
   return (

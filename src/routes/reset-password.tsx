@@ -50,7 +50,7 @@ function ResetPassword() {
           <div className="h-10 w-10 rounded-xl gradient-primary grid place-items-center">
             <Activity className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-semibold">PulseHR</span>
+          <span className="font-semibold">Pulse Inv</span>
         </Link>
         <h1 className="text-2xl font-bold text-center">Set a new password</h1>
         <p className="text-sm text-muted-foreground text-center mt-1">Choose something strong — at least 8 characters.</p>

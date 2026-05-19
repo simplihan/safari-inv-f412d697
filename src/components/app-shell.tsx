@@ -78,7 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="h-9 w-9 rounded-xl gradient-primary grid place-items-center">
           <Activity className="h-5 w-5 text-primary-foreground" />
         </div>
-        <span className="font-semibold tracking-tight">PulseHR</span>
+        <span className="font-semibold tracking-tight">Pulse Inv</span>
       </Link>
       <nav className="mt-6 flex-1 space-y-1">
         {items.map((item) => {
@@ -153,7 +153,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Button variant="ghost" size="icon" onClick={() => setOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
-          <span className="ml-2 font-semibold">PulseHR</span>
+          <span className="ml-2 font-semibold">Pulse Inv</span>
         </header>
         <div className="p-6 md:p-10 max-w-7xl mx-auto">{children}</div>
       </main>
