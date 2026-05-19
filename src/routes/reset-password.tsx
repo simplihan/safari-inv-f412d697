@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -36,7 +37,7 @@ function ResetPassword() {
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("Password updated. Please sign in.");
     await supabase.auth.signOut();
     navigate({ to: "/login" });

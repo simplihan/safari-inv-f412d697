@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +31,7 @@ function Pending() {
 
   const decide = async (id: string, status: "approved" | "rejected") => {
     const { error } = await supabase.from("profiles").update({ status }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success(`User ${status}`);
   };
 

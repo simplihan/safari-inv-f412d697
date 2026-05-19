@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -22,7 +23,7 @@ function ForgotPassword() {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     setSent(true);
     toast.success("Reset link sent — check your inbox.");
   };

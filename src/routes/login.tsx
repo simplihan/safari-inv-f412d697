@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -32,7 +33,7 @@ function Login() {
     }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       setLoading(false);
       return;
     }

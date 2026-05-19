@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +43,7 @@ function ChatSettings() {
     const { error } = await supabase
       .from("dept_chat_settings")
       .upsert({ department: dept, enabled: next, updated_at: new Date().toISOString() }, { onConflict: "department" });
-    if (error) { toast.error(error.message); load(); }
+    if (error) { toast.error(friendlyError(error)); load(); }
     else toast.success(`${dept} chat ${next ? "enabled" : "disabled"}`);
   };
 

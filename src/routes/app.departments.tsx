@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -38,7 +39,7 @@ function DepartmentsPage() {
     setBusy(true);
     const { error } = await supabase.from("departments").insert({ name });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success(`Created "${name}"`);
     setNewName("");
     reload();
@@ -56,7 +57,7 @@ function DepartmentsPage() {
     setBusy(true);
     const { error } = await supabase.from("departments").update({ name }).eq("id", editingId);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("Renamed (members & chat settings updated)");
     setEditingId(null);
     reload();
@@ -67,7 +68,7 @@ function DepartmentsPage() {
     setBusy(true);
     const { error } = await supabase.from("departments").delete().eq("id", confirmDelete.id);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success(`Deleted "${confirmDelete.name}"`);
     setConfirmDelete(null);
     reload();

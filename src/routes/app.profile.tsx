@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,13 +26,13 @@ function Profile() {
 
   const saveInfo = async () => {
     const { error } = await supabase.from("profiles").update({ mobile, profile_image: profileImage }).eq("id", profile.id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("Profile updated"); refresh();
   };
   const changePwd = async () => {
     if (pwd.length < 6) return toast.error("Min 6 characters");
     const { error } = await supabase.auth.updateUser({ password: pwd });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("Password changed"); setPwd("");
   };
 

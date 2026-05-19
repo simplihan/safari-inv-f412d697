@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -47,7 +48,7 @@ function Register() {
       },
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("Request submitted. You'll be notified once approved.");
     navigate({ to: "/login" });
   };

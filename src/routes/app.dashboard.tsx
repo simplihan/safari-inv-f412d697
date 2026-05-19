@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -91,7 +92,7 @@ function Dashboard() {
       status: "out",
     });
     setSubmitting(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success(`Marked OUT — ${reason}`);
     setRemarks("");
     setReason("Break");
@@ -107,7 +108,7 @@ function Dashboard() {
       .update({ in_time: inTime.toISOString(), duration_minutes: dur, status: "in" })
       .eq("id", active.id);
     setSubmitting(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success(`Welcome back — ${dur}m out`);
   };
 

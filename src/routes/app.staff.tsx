@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -122,7 +123,7 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
   const save = async () => {
     const { email: _ignore, ...patch } = form;
     const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     if (isAdmin && role !== user.roles?.[0]) {
       await supabase.from("user_roles").delete().eq("user_id", user.id);
       await supabase.from("user_roles").insert({ user_id: user.id, role: role as any });
@@ -136,7 +137,7 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
       toast.success("Password reset");
       setNewPwd("");
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to reset");
+      toast.error(friendlyError(e));
     }
   };
   return (
@@ -222,7 +223,7 @@ function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
       onCreated();
       onClose();
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed");
+      toast.error(friendlyError(e));
     } finally { setBusy(false); }
   };
 
