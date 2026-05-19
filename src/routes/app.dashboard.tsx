@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { LogOut, LogIn, Clock, Activity, Coffee, Users as UsersIcon } from "lucide-react";
 import { toast } from "sonner";
 import { liveDuration, fmtDuration, fmtTime } from "@/lib/format";
+import { Monitor, Smartphone, Tablet } from "lucide-react";
 
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
 
@@ -38,6 +39,7 @@ function Dashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [tick, setTick] = useState(0);
   const [outNow, setOutNow] = useState(0);
+  const [logins, setLogins] = useState<any[]>([]);
 
   // tick for live timer
   useEffect(() => {
@@ -70,6 +72,15 @@ function Dashboard() {
 
   useEffect(() => {
     load();
+    if (user) {
+      supabase
+        .from("login_events")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5)
+        .then(({ data }) => setLogins(data ?? []));
+    }
     const ch = supabase
       .channel("breaks-self")
       .on("postgres_changes", { event: "*", schema: "public", table: "break_logs" }, () => load())
@@ -215,6 +226,36 @@ function Dashboard() {
                   </div>
                 </li>
               ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="glass border-border">
+        <CardHeader><CardTitle>Recent sign-ins</CardTitle></CardHeader>
+        <CardContent>
+          {logins.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No recent sign-ins recorded.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {logins.map((l: any) => {
+                const Icon = l.device === "Mobile" ? Smartphone : l.device === "Tablet" ? Tablet : Monitor;
+                return (
+                  <li key={l.id} className="py-2.5 flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-3">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      <span>
+                        {l.os ?? "—"} · {l.browser ?? "—"}
+                        <span className="text-muted-foreground"> · {l.device ?? "—"}</span>
+                      </span>
+                    </div>
+                    <div className="text-right text-muted-foreground">
+                      <p className="font-mono text-xs">{l.ip ?? "—"}</p>
+                      <p className="text-[11px]">{new Date(l.created_at).toLocaleString()}</p>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </CardContent>
