@@ -123,6 +123,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <LogOut className="h-4 w-4 mr-2" /> Sign out
         </Button>
         {isAdmin && <p className="text-[10px] text-muted-foreground mt-2 px-1">Admin mode</p>}
+        <p className="text-[10px] text-muted-foreground mt-1 px-1">
+          Copyright © {new Date().getFullYear()} by Hsn
+        </p>
       </div>
     </aside>
   );
