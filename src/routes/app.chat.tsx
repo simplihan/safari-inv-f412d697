@@ -87,6 +87,7 @@ function Chat() {
   };
   const fireDesktopNotif = (m: Msg, from: Person | undefined) => {
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    if (((profile as any)?.notif_enabled ?? true) === false) return;
     if (document.visibilityState === "visible" && activeIdRef.current === m.sender_id) return;
     try {
       const n = new Notification(from?.full_name ?? "New message", {
