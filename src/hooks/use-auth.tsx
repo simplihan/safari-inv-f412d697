@@ -14,6 +14,7 @@ export interface Profile {
   department: string | null;
   status: UserStatus;
   profile_image: string | null;
+  notif_enabled?: boolean;
 }
 
 interface AuthCtx {
