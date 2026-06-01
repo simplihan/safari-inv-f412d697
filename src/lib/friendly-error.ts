@@ -2,7 +2,13 @@ export function friendlyError(error: unknown): string {
   const e = error as { message?: string; code?: string } | null | undefined;
   if (!e) return "Something went wrong. Please try again.";
   const code = e.code ?? "";
-  const msg = (e.message ?? "").toLowerCase();
+  const rawMsg = e.message ?? "";
+  const msg = rawMsg.toLowerCase();
+
+  // Surface helpful trigger messages verbatim
+  if (msg.includes("open activity") || msg.includes("already outside") || msg.includes("5 people")) {
+    return rawMsg;
+  }
 
   if (code === "23505" || msg.includes("duplicate key")) return "That value is already in use.";
   if (code === "23503") return "That change references something that no longer exists.";
