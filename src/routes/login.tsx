@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { recordLoginEvent } from "@/lib/login-events.functions";
+import { signInWithSgcId } from "@/lib/auth.functions";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
@@ -24,13 +25,35 @@ function Login() {
     setLoading(true);
     let email = identifier.trim();
     if (mode === "sgc") {
-      const { data: resolved, error: rpcErr } = await supabase.rpc("get_email_by_sgc", { _sgc: identifier.trim() });
-      if (rpcErr || !resolved) {
-        toast.error("No account found for that SGC ID.");
+      try {
+        const result = await signInWithSgcId({ data: { sgc_id: identifier.trim(), password } });
+        if (result.status === "rejected") {
+          toast.error("Your access request was rejected.");
+          setLoading(false);
+          return;
+        }
+        if (result.status === "pending") {
+          toast.error("Your account is awaiting approval.");
+          setLoading(false);
+          return;
+        }
+        if (!result.session) {
+          toast.error("Invalid SGC ID or password.");
+          setLoading(false);
+          return;
+        }
+        const { error: sessionError } = await supabase.auth.setSession(result.session);
+        if (sessionError) throw sessionError;
+        localStorage.setItem("loginAt", String(Date.now()));
+        recordLoginEvent({ data: { user_agent: navigator.userAgent } }).catch(() => {});
+        toast.success("Welcome back");
+        navigate({ to: "/app/dashboard" });
+        return;
+      } catch (err) {
+        toast.error(friendlyError(err));
         setLoading(false);
         return;
       }
-      email = resolved as string;
     }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
