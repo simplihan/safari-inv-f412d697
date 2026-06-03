@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,6 +25,7 @@ type Row = {
 };
 
 function Monitoring() {
+  const { canManage } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [dept, setDept] = useState("all");
@@ -79,6 +81,8 @@ function Monitoring() {
       .gte("out_time", start.toISOString()).order("out_time", { ascending: false });
     setTimeline(data ?? []);
   };
+
+  if (!canManage) return <Navigate to="/app/dashboard" />;
 
   return (
     <div className="space-y-6">
