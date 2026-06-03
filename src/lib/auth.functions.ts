@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 
 export const signInWithSgcId = createServerFn({ method: "POST" })
@@ -12,6 +11,8 @@ export const signInWithSgcId = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
     const { data: profile, error: lookupError } = await supabaseAdmin
       .from("profiles")
       .select("email, status")
