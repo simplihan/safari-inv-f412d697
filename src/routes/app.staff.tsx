@@ -133,7 +133,8 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
   const doResetPwd = async () => {
     if (newPwd.length < 8) return toast.error("Password must be at least 8 chars");
     try {
-      await resetPwd({ data: { user_id: user.id, password: newPwd } });
+      const result = await resetPwd({ data: { user_id: user.id, password: newPwd } });
+      if (!result.ok) return toast.error(result.error);
       toast.success("Password reset");
       setNewPwd("");
     } catch (e: any) {
@@ -228,13 +229,17 @@ function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
     }
     setBusy(true);
     try {
-      await createFn({ data: { ...form, mobile: form.mobile || null } });
+      const result = await createFn({ data: { ...form, mobile: form.mobile || null } });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
       toast.success("User created");
       onCreated();
       onClose();
     } catch (e: any) {
       console.error("[adminCreateUser]", e);
-      toast.error(e?.message ? `Create failed: ${e.message}` : friendlyError(e));
+      toast.error(friendlyError(e));
     } finally { setBusy(false); }
   };
 
