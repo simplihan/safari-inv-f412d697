@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const CreateInput = z.object({
   email: z.string().email(),
@@ -20,13 +19,19 @@ export const adminCreateUser = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     // verify caller is admin
-    const { data: roleRow } = await supabase
+    const { data: roleRow, error: roleLookupError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
-    if (!roleRow) throw new Error("Forbidden: admin role required");
+    if (roleLookupError) {
+      console.error("[adminCreateUser] admin role lookup failed:", roleLookupError);
+      return { ok: false as const, error: "Unable to verify admin access. Please try again." };
+    }
+    if (!roleRow) return { ok: false as const, error: "Only admins can create users." };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
@@ -41,7 +46,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     });
     if (error || !created.user) {
       console.error("[adminCreateUser] auth.admin.createUser failed:", error);
-      throw new Error("Failed to create user. Please verify the email is not already in use.");
+      return { ok: false as const, error: "Failed to create user. Please verify the email is not already in use." };
     }
 
     const uid = created.user.id;
@@ -60,7 +65,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       console.error("[adminCreateUser] profile upsert failed:", upsertErr);
       // rollback auth user so admin can retry cleanly
       await supabaseAdmin.auth.admin.deleteUser(uid).catch(() => {});
-      throw new Error("Failed to save user profile. Please try again.");
+      return { ok: false as const, error: "Failed to save user profile. Please try again." };
     }
 
     // Ensure role
@@ -70,10 +75,11 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       .insert({ user_id: uid, role: data.role });
     if (roleErr) {
       console.error("[adminCreateUser] role insert failed:", roleErr);
-      throw new Error("Failed to assign user role. Please try again.");
+      await supabaseAdmin.auth.admin.deleteUser(uid).catch(() => {});
+      return { ok: false as const, error: "Failed to assign user role. Please try again." };
     }
 
-    return { id: uid };
+    return { ok: true as const, id: uid };
   });
 
 export const adminResetPassword = createServerFn({ method: "POST" })
@@ -83,13 +89,19 @@ export const adminResetPassword = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: roleRow } = await supabase
+    const { data: roleRow, error: roleLookupError } = await supabase
       .from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
-    if (!roleRow) throw new Error("Forbidden: admin role required");
+    if (roleLookupError) {
+      console.error("[adminResetPassword] admin role lookup failed:", roleLookupError);
+      return { ok: false as const, error: "Unable to verify admin access. Please try again." };
+    }
+    if (!roleRow) return { ok: false as const, error: "Only admins can reset passwords." };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, { password: data.password });
     if (error) {
       console.error("[adminResetPassword] updateUserById failed:", error);
-      throw new Error("Failed to reset password. Please try again.");
+      return { ok: false as const, error: "Failed to reset password. Please try again." };
     }
     return { ok: true };
   });
