@@ -223,6 +223,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_close_stale_breaks: { Args: never; Returns: undefined }
+      cleanup_old_break_logs: { Args: never; Returns: undefined }
       cleanup_old_messages: { Args: never; Returns: undefined }
       get_email_by_sgc: { Args: { _sgc: string }; Returns: string }
     }
