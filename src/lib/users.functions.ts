@@ -9,15 +9,34 @@ const CreateInput = z.object({
   sgc_id: z.string().min(1).max(40),
   mobile: z.string().max(40).optional().nullable(),
   department: z.string().min(1).max(120),
-  role: z.enum(["admin", "manager", "staff"]).default("staff"),
+  role: z.enum(["admin", "manager", "supervisor", "staff"]).default("staff"),
   status: z.enum(["pending", "approved", "rejected"]).default("approved"),
 });
 
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => CreateInput.parse(data))
+  .inputValidator((data) => {
+    const result = CreateInput.safeParse(data);
+    if (!result.success) {
+      return {
+        email: "invalid@example.com",
+        password: "invalid-password",
+        full_name: "Invalid user",
+        sgc_id: "invalid",
+        mobile: null,
+        department: "invalid",
+        role: "staff" as const,
+        status: "approved" as const,
+        validationError: "Please check all fields and try again.",
+      };
+    }
+    return { ...result.data, validationError: null as string | null };
+  })
   .handler(async ({ data, context }) => {
     try {
+      if (data.validationError) {
+        return { ok: false as const, error: data.validationError };
+      }
       const { supabase, userId } = context;
       // verify caller is admin
       const { data: roleRow, error: roleLookupError } = await supabase
