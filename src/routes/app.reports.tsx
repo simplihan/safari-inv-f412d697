@@ -25,7 +25,7 @@ function Reports() {
   const [to, setTo] = useState(today);
   const [rows, setRows] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
-  const [logins, setLogins] = useState<any[]>([]);
+  const [deviceByUser, setDeviceByUser] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!canManage) return;
@@ -40,7 +40,11 @@ function Reports() {
         .from("login_events").select("*")
         .gte("created_at", fromIso).lt("created_at", toIso)
         .order("created_at", { ascending: false }).limit(200);
-      setLogins(ev ?? []);
+      const map: Record<string, string> = {};
+      (ev ?? []).forEach((l: any) => {
+        if (!map[l.user_id] && l.device) map[l.user_id] = l.device;
+      });
+      setDeviceByUser(map);
     })();
   }, [from, to, canManage]);
 
@@ -59,11 +63,11 @@ function Reports() {
   if (!canManage) return <Navigate to="/app/dashboard" />;
 
   const exportCSV = () => {
-    const header = ["Name", "Department", "Reason", "Remarks", "Out", "In", "Duration (min)"];
+    const header = ["Name", "Department", "Reason", "Remarks", "Out", "In", "Duration (min)", "Device"];
     const lines = [header.join(",")];
     rows.forEach((r) => {
       const p = profiles[r.user_id];
-      lines.push([`"${p?.full_name ?? ""}"`, `"${p?.department ?? ""}"`, r.reason, `"${(r.remarks ?? "").replace(/"/g, "''")}"`, r.out_time, r.in_time ?? "", r.duration_minutes ?? ""].join(","));
+      lines.push([`"${p?.full_name ?? ""}"`, `"${p?.department ?? ""}"`, r.reason, `"${(r.remarks ?? "").replace(/"/g, "''")}"`, r.out_time, r.in_time ?? "", r.duration_minutes ?? "", deviceByUser[r.user_id] ?? ""].join(","));
     });
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -75,10 +79,10 @@ function Reports() {
     doc.text(`Pulse Safari Report  ${from} -> ${to}`, 14, 16);
     autoTable(doc, {
       startY: 22,
-      head: [["Name", "Department", "Reason", "Out", "In", "Min"]],
+      head: [["Name", "Department", "Reason", "Out", "In", "Min", "Device"]],
       body: rows.map((r) => {
         const p = profiles[r.user_id];
-        return [p?.full_name ?? "—", p?.department ?? "—", r.reason, fmtDateTime(r.out_time), fmtDateTime(r.in_time), r.duration_minutes ?? "—"];
+        return [p?.full_name ?? "—", p?.department ?? "—", r.reason, fmtDateTime(r.out_time), fmtDateTime(r.in_time), r.duration_minutes ?? "—", deviceByUser[r.user_id] ?? "—"];
       }),
     });
     doc.save(`pulse-inv-${from}-to-${to}.pdf`);
@@ -95,24 +99,12 @@ function Reports() {
         Out: r.out_time,
         In: r.in_time ?? "",
         "Duration (min)": r.duration_minutes ?? "",
+        Device: deviceByUser[r.user_id] ?? "",
       };
     });
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, "Activities");
-    if (logins.length) {
-      const lws = XLSX.utils.json_to_sheet(
-        logins.map((l: any) => ({
-          User: profiles[l.user_id]?.full_name ?? "—",
-          Device: l.device ?? "",
-          OS: l.os ?? "",
-          Browser: l.browser ?? "",
-          IP: l.ip ?? "",
-          When: l.created_at,
-        }))
-      );
-      XLSX.utils.book_append_sheet(wb, lws, "Sign-ins");
-    }
     XLSX.writeFile(wb, `pulse-safari-${from}-to-${to}.xlsx`);
   };
 
@@ -166,7 +158,7 @@ function Reports() {
         <CardContent className="overflow-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-muted-foreground">
-              <tr><th className="py-2">Name</th><th>Reason</th><th>Out</th><th>In</th><th>Duration</th></tr>
+              <tr><th className="py-2">Name</th><th>Reason</th><th>Out</th><th>In</th><th>Duration</th><th>Device</th></tr>
             </thead>
             <tbody>
               {rows.map((r) => (
@@ -176,37 +168,11 @@ function Reports() {
                   <td className="text-xs">{fmtDateTime(r.out_time)}</td>
                   <td className="text-xs">{fmtDateTime(r.in_time)}</td>
                   <td>{r.duration_minutes != null ? fmtDuration(r.duration_minutes) : "—"}</td>
+                  <td>{deviceByUser[r.user_id] ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </CardContent>
-      </Card>
-
-      <Card className="glass">
-        <CardHeader><CardTitle>Sign-in log (device · IP)</CardTitle></CardHeader>
-        <CardContent className="overflow-auto">
-          {logins.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">No sign-ins in range.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr><th className="py-2">User</th><th>Device</th><th>OS</th><th>Browser</th><th>IP</th><th>When</th></tr>
-              </thead>
-              <tbody>
-                {logins.map((l: any) => (
-                  <tr key={l.id} className="border-t border-border">
-                    <td className="py-2">{profiles[l.user_id]?.full_name ?? "—"}</td>
-                    <td>{l.device ?? "—"}</td>
-                    <td>{l.os ?? "—"}</td>
-                    <td>{l.browser ?? "—"}</td>
-                    <td className="font-mono text-xs">{l.ip ?? "—"}</td>
-                    <td className="text-xs">{fmtDateTime(l.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
         </CardContent>
       </Card>
     </div>
