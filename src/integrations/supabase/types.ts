@@ -229,7 +229,7 @@ export type Database = {
       get_email_by_sgc: { Args: { _sgc: string }; Returns: string }
     }
     Enums: {
-      app_role: "admin" | "manager" | "staff"
+      app_role: "admin" | "manager" | "staff" | "supervisor"
       break_reason:
         | "Break"
         | "Lunch"
@@ -365,7 +365,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "manager", "staff"],
+      app_role: ["admin", "manager", "staff", "supervisor"],
       break_reason: [
         "Break",
         "Lunch",
