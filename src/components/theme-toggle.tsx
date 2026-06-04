@@ -10,7 +10,11 @@ export function ThemeToggle() {
       variant="outline"
       size="sm"
       onClick={toggle}
-      className="w-full justify-start gap-2"
+      className={`w-full justify-start gap-2 transition-colors ${
+        isDark
+          ? "bg-yellow-100 text-yellow-900 border-yellow-300 hover:bg-yellow-200 hover:text-yellow-900"
+          : "bg-slate-900 text-slate-100 border-slate-700 hover:bg-slate-800 hover:text-white"
+      }`}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
