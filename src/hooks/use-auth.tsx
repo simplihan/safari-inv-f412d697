@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
-export type AppRole = "admin" | "manager" | "staff";
+export type AppRole = "admin" | "manager" | "supervisor" | "staff";
 export type UserStatus = "pending" | "approved" | "rejected";
 
 export interface Profile {
@@ -27,6 +27,7 @@ interface AuthCtx {
   refresh: () => Promise<void>;
   isAdmin: boolean;
   isManager: boolean;
+  isSupervisor: boolean;
   isStaff: boolean;
   canManage: boolean;
 }
@@ -98,7 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = roles.includes("admin");
   const isManager = roles.includes("manager");
-  const isStaff = roles.includes("staff");
+  const isSupervisor = roles.includes("supervisor");
+  const isStaff = roles.includes("staff") || isSupervisor;
 
   return (
     <Ctx.Provider
@@ -112,8 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refresh,
         isAdmin,
         isManager,
+        isSupervisor,
         isStaff,
-        canManage: isAdmin || isManager,
+        canManage: isAdmin || isManager || isSupervisor,
       }}
     >
       {children}
