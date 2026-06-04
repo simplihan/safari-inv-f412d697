@@ -11,16 +11,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Search, Pencil, UserPlus, KeyRound } from "lucide-react";
+import { Search, Pencil, UserPlus, KeyRound, Power } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { adminCreateUser, adminResetPassword } from "@/lib/users.functions";
+import { adminCreateUser, adminResetPassword, adminSetRoles, adminSetActive } from "@/lib/users.functions";
 import { useDepartments } from "@/hooks/use-departments";
 
 export const Route = createFileRoute("/app/staff")({ component: Staff });
 
 function Staff() {
   const { canManage, isAdmin } = useAuth();
+  const setActive = useServerFn(adminSetActive);
   const [rows, setRows] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<any | null>(null);
@@ -43,6 +45,17 @@ function Staff() {
   const filtered = rows.filter((r) =>
     !q || r.full_name?.toLowerCase().includes(q.toLowerCase()) || r.email?.toLowerCase().includes(q.toLowerCase())
   );
+
+  const toggleActive = async (r: any) => {
+    const active = r.status !== "approved";
+    try {
+      await setActive({ data: { user_id: r.id, active } });
+      toast.success(active ? "User activated" : "User deactivated");
+      load();
+    } catch (e: any) {
+      toast.error(friendlyError(e));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -89,6 +102,17 @@ function Staff() {
               <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
                 <Pencil className="h-4 w-4 mr-1" /> Edit
               </Button>
+              {isAdmin && (
+                <Button
+                  size="sm"
+                  variant={r.status === "approved" ? "outline" : "default"}
+                  onClick={() => toggleActive(r)}
+                  className={r.status === "approved" ? "" : "gradient-primary text-primary-foreground border-0"}
+                >
+                  <Power className="h-4 w-4 mr-1" />
+                  {r.status === "approved" ? "Deactivate" : "Activate"}
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -101,9 +125,10 @@ function Staff() {
 
 function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
   const [form, setForm] = useState<any>(null);
-  const [role, setRole] = useState<string>("staff");
+  const [roles, setRoles] = useState<string[]>(["staff"]);
   const [newPwd, setNewPwd] = useState("");
   const resetPwd = useServerFn(adminResetPassword);
+  const setRolesFn = useServerFn(adminSetRoles);
   const { names: deptNames } = useDepartments();
   useEffect(() => {
     if (user) {
@@ -115,18 +140,29 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
         status: user.status,
         email: user.email,
       });
-      setRole(user.roles?.[0] ?? "staff");
+      setRoles(user.roles?.length ? user.roles : ["staff"]);
       setNewPwd("");
     }
   }, [user]);
   if (!user || !form) return null;
+  const toggleRole = (r: string) => {
+    setRoles((prev) => prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]);
+  };
   const save = async () => {
     const { email: _ignore, ...patch } = form;
     const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
     if (error) return toast.error(friendlyError(error));
-    if (isAdmin && role !== user.roles?.[0]) {
-      await supabase.from("user_roles").delete().eq("user_id", user.id);
-      await supabase.from("user_roles").insert({ user_id: user.id, role: role as any });
+    if (isAdmin) {
+      const sorted = [...roles].sort().join(",");
+      const current = [...(user.roles ?? [])].sort().join(",");
+      if (sorted !== current) {
+        if (roles.length === 0) return toast.error("Assign at least one role");
+        try {
+          await setRolesFn({ data: { user_id: user.id, roles: roles as any } });
+        } catch (e: any) {
+          return toast.error(friendlyError(e));
+        }
+      }
     }
     toast.success("Saved"); onSaved(); onClose();
   };
@@ -171,15 +207,15 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
           </div>
           {isAdmin && (
             <div className="col-span-2">
-              <Label>Role</Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Roles</Label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {(["admin", "manager", "supervisor", "staff"] as const).map((r) => (
+                  <label key={r} className="flex items-center gap-2 rounded-md border border-border px-3 py-2 cursor-pointer hover:bg-muted/40">
+                    <Checkbox checked={roles.includes(r)} onCheckedChange={() => toggleRole(r)} />
+                    <span className="capitalize text-sm">{r}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           )}
           {isAdmin && (
@@ -207,7 +243,7 @@ function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const [form, setForm] = useState({
     full_name: "", email: "", password: "", sgc_id: "", mobile: "",
     department: "Inventory",
-    role: "staff" as "admin" | "manager" | "staff",
+    role: "staff" as "admin" | "manager" | "supervisor" | "staff",
     status: "approved" as "approved" | "pending" | "rejected",
   });
   const [busy, setBusy] = useState(false);
@@ -251,6 +287,7 @@ function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
               <SelectContent>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="manager">Manager</SelectItem>
+                <SelectItem value="supervisor">Supervisor</SelectItem>
                 <SelectItem value="staff">Staff</SelectItem>
               </SelectContent>
             </Select>
