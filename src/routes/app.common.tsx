@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { fmtTime, fmtDuration, liveDuration } from "@/lib/format";
-import { PieChart as PieIcon, Trophy, AlertTriangle } from "lucide-react";
+import { PieChart as PieIcon, Trophy, Clock } from "lucide-react";
 import { useAdminIds } from "@/hooks/use-admin-ids";
 
 export const Route = createFileRoute("/app/common")({ component: Common });
@@ -147,7 +147,7 @@ function Common() {
 
   const COLORS = ["#6366f1", "#f59e0b", "#ef4444"];
 
-  // Performance overview — top performers (least break time) & needs attention
+  // Performance overview — top performers (least break time) & most breaks (most break time)
   const overview = useMemo(() => {
     const perUser = new Map<string, { id: string; name: string; dept: string | null; img: string | null; breakMin: number }>();
     people.forEach((p) => {
@@ -156,11 +156,8 @@ function Common() {
     });
     const list = Array.from(perUser.values());
     const top = [...list].sort((a, b) => a.breakMin - b.breakMin).slice(0, 5);
-    const attention = list
-      .filter((u) => u.breakMin > chartDuty * 0.15) // >15% break time of period
-      .sort((a, b) => b.breakMin - a.breakMin)
-      .slice(0, 5);
-    return { top, attention };
+    const most = [...list].sort((a, b) => b.breakMin - a.breakMin).slice(0, 5);
+    return { top, most };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people, chartRows, adminIds, chartDuty, tick]);
 
@@ -269,25 +266,26 @@ function Common() {
           </div>
           <div>
             <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning" /> Needs attention
+              <Clock className="h-4 w-4 text-warning" /> Most breaks
             </h3>
-            {overview.attention.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">Everyone within quota.</p>
+            {overview.most.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No data yet.</p>
             ) : (
               <ul className="divide-y divide-border">
-                {overview.attention.map((u) => (
+                {overview.most.map((u, i) => (
                   <li key={u.id} className="py-2 flex items-center gap-3">
+                    <span className="w-5 text-xs font-bold text-muted-foreground">#{i + 1}</span>
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={u.img ?? undefined} />
                       <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
-                        {u.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                        {u.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{u.name}</p>
                       {u.dept && <p className="text-xs text-muted-foreground truncate">{u.dept}</p>}
                     </div>
-                    <Badge className="bg-warning/20 text-foreground border-warning/40 text-xs">
+                    <Badge variant="secondary" className="text-xs">
                       {fmtDuration(u.breakMin)} break
                     </Badge>
                   </li>
