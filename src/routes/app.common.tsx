@@ -273,8 +273,8 @@ function Common() {
             ) : (
               <ul className="divide-y divide-border">
                 {overview.most.map((u, i) => (
-                  <li key={u.id} className="py-2 flex items-center gap-3">
-                    <span className="w-5 text-xs font-bold text-muted-foreground">#{i + 1}</span>
+                  <li key={u.id} className={`py-2 flex items-center gap-3 rounded-md px-2 -mx-2 ${i === 0 ? 'bg-destructive/10' : i === 1 ? 'bg-destructive/5' : ''}`}>
+                    <span className={`w-5 text-xs font-bold ${i === 0 ? 'text-destructive' : i === 1 ? 'text-destructive/70' : 'text-muted-foreground'}`}>#{i + 1}</span>
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={u.img ?? undefined} />
                       <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
@@ -285,7 +285,7 @@ function Common() {
                       <p className="text-sm font-medium truncate">{u.name}</p>
                       {u.dept && <p className="text-xs text-muted-foreground truncate">{u.dept}</p>}
                     </div>
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge className={`text-xs ${i === 0 ? 'bg-destructive/20 text-destructive border-destructive/40 hover:bg-destructive/30' : 'bg-secondary text-secondary-foreground'}`}>
                       {fmtDuration(u.breakMin)} break
                     </Badge>
                   </li>
