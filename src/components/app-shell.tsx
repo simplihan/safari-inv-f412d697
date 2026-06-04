@@ -15,6 +15,7 @@ import {
   MessagesSquare,
   Building2,
   ShieldCheck,
+  CalendarRange,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -85,6 +86,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/app/pending", label: "Pending Requests", icon: UserCheck, show: canManage },
     { to: "/app/staff", label: "Staff Management", icon: Users, show: canManage },
     { to: "/app/reports", label: "Reports", icon: FileBarChart, show: canManage },
+    { to: "/app/monthly", label: "Monthly Reports", icon: CalendarRange, show: canManage },
     { to: "/app/audit", label: "Audit Log", icon: ShieldCheck, show: isAdmin },
     { to: "/app/profile", label: "Profile", icon: Settings, show: true },
   ].filter((i) => i.show);

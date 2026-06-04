@@ -20,6 +20,7 @@ import { Route as AppStaffRouteImport } from './routes/app.staff'
 import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPendingRouteImport } from './routes/app.pending'
+import { Route as AppMonthlyRouteImport } from './routes/app.monthly'
 import { Route as AppMonitoringRouteImport } from './routes/app.monitoring'
 import { Route as AppDepartmentsRouteImport } from './routes/app.departments'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
@@ -83,6 +84,11 @@ const AppPendingRoute = AppPendingRouteImport.update({
   path: '/pending',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMonthlyRoute = AppMonthlyRouteImport.update({
+  id: '/monthly',
+  path: '/monthly',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMonitoringRoute = AppMonitoringRouteImport.update({
   id: '/monitoring',
   path: '/monitoring',
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
   '/app/monitoring': typeof AppMonitoringRoute
+  '/app/monthly': typeof AppMonthlyRoute
   '/app/pending': typeof AppPendingRoute
   '/app/profile': typeof AppProfileRoute
   '/app/reports': typeof AppReportsRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
   '/app/monitoring': typeof AppMonitoringRoute
+  '/app/monthly': typeof AppMonthlyRoute
   '/app/pending': typeof AppPendingRoute
   '/app/profile': typeof AppProfileRoute
   '/app/reports': typeof AppReportsRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
   '/app/monitoring': typeof AppMonitoringRoute
+  '/app/monthly': typeof AppMonthlyRoute
   '/app/pending': typeof AppPendingRoute
   '/app/profile': typeof AppProfileRoute
   '/app/reports': typeof AppReportsRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/departments'
     | '/app/monitoring'
+    | '/app/monthly'
     | '/app/pending'
     | '/app/profile'
     | '/app/reports'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/departments'
     | '/app/monitoring'
+    | '/app/monthly'
     | '/app/pending'
     | '/app/profile'
     | '/app/reports'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/departments'
     | '/app/monitoring'
+    | '/app/monthly'
     | '/app/pending'
     | '/app/profile'
     | '/app/reports'
@@ -331,6 +343,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPendingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/monthly': {
+      id: '/app/monthly'
+      path: '/monthly'
+      fullPath: '/app/monthly'
+      preLoaderRoute: typeof AppMonthlyRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/monitoring': {
       id: '/app/monitoring'
       path: '/monitoring'
@@ -391,6 +410,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppDepartmentsRoute: typeof AppDepartmentsRoute
   AppMonitoringRoute: typeof AppMonitoringRoute
+  AppMonthlyRoute: typeof AppMonthlyRoute
   AppPendingRoute: typeof AppPendingRoute
   AppProfileRoute: typeof AppProfileRoute
   AppReportsRoute: typeof AppReportsRoute
@@ -406,6 +426,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppDepartmentsRoute: AppDepartmentsRoute,
   AppMonitoringRoute: AppMonitoringRoute,
+  AppMonthlyRoute: AppMonthlyRoute,
   AppPendingRoute: AppPendingRoute,
   AppProfileRoute: AppProfileRoute,
   AppReportsRoute: AppReportsRoute,
