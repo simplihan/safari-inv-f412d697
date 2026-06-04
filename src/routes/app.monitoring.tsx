@@ -18,6 +18,7 @@ import { adminStartActivity, adminStopActivity } from "@/lib/activities.function
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/friendly-error";
+import { useAdminIds } from "@/hooks/use-admin-ids";
 
 export const Route = createFileRoute("/app/monitoring")({ component: Monitoring });
 
@@ -31,6 +32,7 @@ type Row = {
 
 function Monitoring() {
   const { canManage } = useAuth();
+  const adminIds = useAdminIds();
   const startFn = useServerFn(adminStartActivity);
   const stopFn = useServerFn(adminStopActivity);
   const [rows, setRows] = useState<Row[]>([]);
@@ -100,6 +102,7 @@ function Monitoring() {
   const departments = useMemo(() => Array.from(new Set(rows.map((r) => r.department).filter(Boolean))) as string[], [rows]);
 
   const filtered = rows.filter((r) => {
+    if (adminIds.has(r.id)) return false;
     if (dept !== "all" && r.department !== dept) return false;
     if (q && !r.full_name.toLowerCase().includes(q.toLowerCase())) return false;
     return true;

@@ -33,11 +33,10 @@ export const adminStartActivity = createServerFn({ method: "POST" })
       .maybeSingle();
     if (open) throw new Error("User already has an open activity.");
 
-    const remarks = `${data.remarks ?? ""}${data.remarks ? " | " : ""}[admin start]`.trim();
     const { error } = await supabaseAdmin.from("break_logs").insert({
       user_id: data.user_id,
       reason: data.reason as any,
-      remarks,
+      remarks: data.remarks ?? null,
       out_time: new Date().toISOString(),
       status: "out",
     });
@@ -62,7 +61,6 @@ export const adminStopActivity = createServerFn({ method: "POST" })
 
     const inTime = new Date();
     const dur = Math.max(1, Math.round((inTime.getTime() - new Date(row.out_time).getTime()) / 60000));
-    const remarks = `${row.remarks ?? ""}${row.remarks ? " | " : ""}[admin stop]`.trim();
 
     const { error } = await supabaseAdmin
       .from("break_logs")
@@ -70,7 +68,6 @@ export const adminStopActivity = createServerFn({ method: "POST" })
         in_time: inTime.toISOString(),
         duration_minutes: dur,
         status: "in",
-        remarks,
       })
       .eq("id", data.activity_id);
     if (error) throw new Error(error.message);
