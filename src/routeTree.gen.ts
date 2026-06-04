@@ -26,6 +26,7 @@ import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppCommonRouteImport } from './routes/app.common'
 import { Route as AppChatSettingsRouteImport } from './routes/app.chat-settings'
 import { Route as AppChatRouteImport } from './routes/app.chat'
+import { Route as AppAuditRouteImport } from './routes/app.audit'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -112,6 +113,11 @@ const AppChatRoute = AppChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAuditRoute = AppAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/app/audit': typeof AppAuditRoute
   '/app/chat': typeof AppChatRoute
   '/app/chat-settings': typeof AppChatSettingsRoute
   '/app/common': typeof AppCommonRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/app/audit': typeof AppAuditRoute
   '/app/chat': typeof AppChatRoute
   '/app/chat-settings': typeof AppChatSettingsRoute
   '/app/common': typeof AppCommonRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/app/audit': typeof AppAuditRoute
   '/app/chat': typeof AppChatRoute
   '/app/chat-settings': typeof AppChatSettingsRoute
   '/app/common': typeof AppCommonRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/reset-password'
+    | '/app/audit'
     | '/app/chat'
     | '/app/chat-settings'
     | '/app/common'
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/reset-password'
+    | '/app/audit'
     | '/app/chat'
     | '/app/chat-settings'
     | '/app/common'
@@ -218,6 +229,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/reset-password'
+    | '/app/audit'
     | '/app/chat'
     | '/app/chat-settings'
     | '/app/common'
@@ -361,10 +373,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppChatRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/audit': {
+      id: '/app/audit'
+      path: '/audit'
+      fullPath: '/app/audit'
+      preLoaderRoute: typeof AppAuditRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAuditRoute: typeof AppAuditRoute
   AppChatRoute: typeof AppChatRoute
   AppChatSettingsRoute: typeof AppChatSettingsRoute
   AppCommonRoute: typeof AppCommonRoute
@@ -379,6 +399,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAuditRoute: AppAuditRoute,
   AppChatRoute: AppChatRoute,
   AppChatSettingsRoute: AppChatSettingsRoute,
   AppCommonRoute: AppCommonRoute,
