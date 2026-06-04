@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { fmtTime, fmtDuration, liveDuration } from "@/lib/format";
-import { PieChart as PieIcon } from "lucide-react";
+import { PieChart as PieIcon, Trophy, AlertTriangle } from "lucide-react";
+import { useAdminIds } from "@/hooks/use-admin-ids";
 
 export const Route = createFileRoute("/app/common")({ component: Common });
 
@@ -30,6 +31,7 @@ type Row = {
 
 function Common() {
   const { user, profile, canManage } = useAuth();
+  const adminIds = useAdminIds();
   const [rows, setRows] = useState<Row[]>([]);
   const [chartRows, setChartRows] = useState<Row[]>([]);
   const [period, setPeriod] = useState<Period>("day");
@@ -51,12 +53,13 @@ function Common() {
       .select("*")
       .gte("out_time", start.toISOString())
       .order("out_time", { ascending: false });
-    const ids = Array.from(new Set((logs ?? []).map((l: any) => l.user_id)));
+    const filteredLogs = (logs ?? []).filter((l: any) => !adminIds.has(l.user_id));
+    const ids = Array.from(new Set(filteredLogs.map((l: any) => l.user_id)));
     const { data: profs } = ids.length
       ? await supabase.from("profiles").select("id, full_name, department, profile_image").in("id", ids)
       : { data: [] as any[] };
     const pmap = new Map((profs ?? []).map((p: any) => [p.id, p]));
-    setRows(((logs ?? []) as Row[]).map((l) => ({ ...l, profile: pmap.get(l.user_id) })));
+    setRows((filteredLogs as Row[]).map((l) => ({ ...l, profile: pmap.get(l.user_id) })));
   };
 
   // Load chart data scoped to the selected period (day/week/month)
@@ -72,7 +75,7 @@ function Common() {
       .from("break_logs").select("*")
       .gte("out_time", start.toISOString())
       .order("out_time", { ascending: false });
-    const list = (logs ?? []) as Row[];
+    const list = ((logs ?? []) as Row[]).filter((l) => !adminIds.has(l.user_id));
     // Hydrate profiles for everyone in this chart range so the user picker
     // never shows "Unknown".
     const ids = Array.from(new Set(list.map((l) => l.user_id)));
@@ -82,7 +85,7 @@ function Common() {
     const pmap = new Map((profs ?? []).map((p: any) => [p.id, p]));
     setChartRows(list.map((l) => ({ ...l, profile: pmap.get(l.user_id) })));
   };
-  useEffect(() => { loadChart(); }, [period]);
+  useEffect(() => { loadChart(); }, [period, adminIds]);
 
   useEffect(() => {
     load();
@@ -91,7 +94,7 @@ function Common() {
       .on("postgres_changes", { event: "*", schema: "public", table: "break_logs" }, () => { load(); loadChart(); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [adminIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // people visible to me (combine activity feed + chart data so the selector covers the whole period)
   const people = useMemo(() => {
@@ -143,6 +146,23 @@ function Common() {
   ].filter((d) => d.value > 0);
 
   const COLORS = ["#6366f1", "#f59e0b", "#ef4444"];
+
+  // Performance overview — top performers (least break time) & needs attention
+  const overview = useMemo(() => {
+    const perUser = new Map<string, { id: string; name: string; dept: string | null; img: string | null; breakMin: number }>();
+    people.forEach((p) => {
+      if (adminIds.has(p.id)) return;
+      perUser.set(p.id, { ...p, breakMin: breakMinFor(p.id) });
+    });
+    const list = Array.from(perUser.values());
+    const top = [...list].sort((a, b) => a.breakMin - b.breakMin).slice(0, 5);
+    const attention = list
+      .filter((u) => u.breakMin > chartDuty * 0.15) // >15% break time of period
+      .sort((a, b) => b.breakMin - a.breakMin)
+      .slice(0, 5);
+    return { top, attention };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [people, chartRows, adminIds, chartDuty, tick]);
 
   return (
     <div className="space-y-6">
@@ -207,6 +227,76 @@ function Common() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="glass">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            Performance overview
+            <span className="text-xs text-muted-foreground font-normal">
+              · {period === "day" ? "today" : period === "week" ? "last 7 days" : "last 30 days"}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-success" /> Top performers
+            </h3>
+            {overview.top.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No data yet.</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {overview.top.map((u, i) => (
+                  <li key={u.id} className="py-2 flex items-center gap-3">
+                    <span className="w-5 text-xs font-bold text-muted-foreground">#{i + 1}</span>
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={u.img ?? undefined} />
+                      <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
+                        {u.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{u.name}</p>
+                      {u.dept && <p className="text-xs text-muted-foreground truncate">{u.dept}</p>}
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {fmtDuration(Math.max(0, chartDuty - u.breakMin))} working
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning" /> Needs attention
+            </h3>
+            {overview.attention.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">Everyone within quota.</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {overview.attention.map((u) => (
+                  <li key={u.id} className="py-2 flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={u.img ?? undefined} />
+                      <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
+                        {u.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{u.name}</p>
+                      {u.dept && <p className="text-xs text-muted-foreground truncate">{u.dept}</p>}
+                    </div>
+                    <Badge className="bg-warning/20 text-foreground border-warning/40 text-xs">
+                      {fmtDuration(u.breakMin)} break
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="glass">
         <CardHeader><CardTitle>Today's activity feed</CardTitle></CardHeader>
