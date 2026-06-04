@@ -341,7 +341,7 @@ function Chat() {
             </div>
           ) : (
             <>
-              <header className="sticky top-0 z-10 px-4 py-3 border-b border-border flex items-center gap-3 bg-background/80 backdrop-blur-md">
+              <header className="px-4 py-3 border-b border-border flex items-center gap-3">
                 <Avatar className="h-9 w-9">
                   <AvatarImage src={active.profile_image ?? undefined} />
                   <AvatarFallback className="gradient-primary text-primary-foreground text-xs">

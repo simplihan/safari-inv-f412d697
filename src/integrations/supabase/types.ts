@@ -223,13 +223,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      auto_close_stale_breaks: { Args: never; Returns: undefined }
-      cleanup_old_break_logs: { Args: never; Returns: undefined }
       cleanup_old_messages: { Args: never; Returns: undefined }
       get_email_by_sgc: { Args: { _sgc: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin_or_manager: { Args: { _user_id: string }; Returns: boolean }
+      is_approved: { Args: { _user_id: string }; Returns: boolean }
+      same_department: { Args: { _a: string; _b: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "manager" | "staff" | "supervisor"
+      app_role: "admin" | "manager" | "staff"
       break_reason:
         | "Break"
         | "Lunch"
@@ -365,7 +373,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "manager", "staff", "supervisor"],
+      app_role: ["admin", "manager", "staff"],
       break_reason: [
         "Break",
         "Lunch",

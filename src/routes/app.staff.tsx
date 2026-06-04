@@ -19,15 +19,6 @@ import { useDepartments } from "@/hooks/use-departments";
 
 export const Route = createFileRoute("/app/staff")({ component: Staff });
 
-type StaffRole = "admin" | "manager" | "supervisor" | "staff";
-
-const ROLE_OPTIONS: { value: StaffRole; label: string }[] = [
-  { value: "admin", label: "Admin" },
-  { value: "manager", label: "Manager" },
-  { value: "supervisor", label: "Supervisor" },
-  { value: "staff", label: "Staff" },
-];
-
 function Staff() {
   const { canManage, isAdmin } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
@@ -142,8 +133,7 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
   const doResetPwd = async () => {
     if (newPwd.length < 8) return toast.error("Password must be at least 8 chars");
     try {
-      const result = await resetPwd({ data: { user_id: user.id, password: newPwd } });
-      if (!result.ok) return toast.error(result.error);
+      await resetPwd({ data: { user_id: user.id, password: newPwd } });
       toast.success("Password reset");
       setNewPwd("");
     } catch (e: any) {
@@ -185,9 +175,9 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ROLE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                  ))}
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -216,38 +206,23 @@ function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const { names: deptNames } = useDepartments();
   const [form, setForm] = useState({
     full_name: "", email: "", password: "", sgc_id: "", mobile: "",
-    department: "",
-    role: "staff" as StaffRole,
+    department: "Inventory",
+    role: "staff" as "admin" | "manager" | "staff",
     status: "approved" as "approved" | "pending" | "rejected",
   });
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (!form.department && deptNames.length > 0) {
-      setForm((f) => ({ ...f, department: deptNames[0] }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deptNames]);
 
   const submit = async () => {
     if (!form.email || form.password.length < 8 || !form.full_name || !form.sgc_id) {
       return toast.error("Fill name, SGC, email and 8+ char password");
     }
-    if (!form.department) {
-      return toast.error("Select a department");
-    }
     setBusy(true);
     try {
-      const result = await createFn({ data: { ...form, mobile: form.mobile || null } });
-      if (!result.ok) {
-        toast.error(result.error);
-        return;
-      }
+      await createFn({ data: { ...form, mobile: form.mobile || null } });
       toast.success("User created");
       onCreated();
       onClose();
     } catch (e: any) {
-      console.error("[adminCreateUser]", e);
       toast.error(friendlyError(e));
     } finally { setBusy(false); }
   };
@@ -274,9 +249,9 @@ function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
             <Select value={form.role} onValueChange={(v: any) => setForm({ ...form, role: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {ROLE_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                ))}
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="manager">Manager</SelectItem>
+                <SelectItem value="staff">Staff</SelectItem>
               </SelectContent>
             </Select>
           </div>
