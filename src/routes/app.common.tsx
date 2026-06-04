@@ -147,7 +147,7 @@ function Common() {
 
   const COLORS = ["#6366f1", "#f59e0b", "#ef4444"];
 
-  // Performance overview — top performers (least break time) & needs attention
+  // Performance overview — top performers (least break time) & most breaks (most break time)
   const overview = useMemo(() => {
     const perUser = new Map<string, { id: string; name: string; dept: string | null; img: string | null; breakMin: number }>();
     people.forEach((p) => {
@@ -156,11 +156,8 @@ function Common() {
     });
     const list = Array.from(perUser.values());
     const top = [...list].sort((a, b) => a.breakMin - b.breakMin).slice(0, 5);
-    const attention = list
-      .filter((u) => u.breakMin > chartDuty * 0.15) // >15% break time of period
-      .sort((a, b) => b.breakMin - a.breakMin)
-      .slice(0, 5);
-    return { top, attention };
+    const most = [...list].sort((a, b) => b.breakMin - a.breakMin).slice(0, 5);
+    return { top, most };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people, chartRows, adminIds, chartDuty, tick]);
 
