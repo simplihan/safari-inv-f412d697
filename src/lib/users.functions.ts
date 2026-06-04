@@ -10,7 +10,7 @@ const CreateInput = z.object({
   sgc_id: z.string().min(1).max(40),
   mobile: z.string().max(40).optional().nullable(),
   department: z.string().min(1).max(120),
-  role: z.enum(["admin", "manager", "staff"]).default("staff"),
+  role: z.enum(["admin", "manager", "supervisor", "staff"]).default("staff"),
   status: z.enum(["pending", "approved", "rejected"]).default("approved"),
 });
 
@@ -72,5 +72,51 @@ export const adminResetPassword = createServerFn({ method: "POST" })
     if (!roleRow) throw new Error("Forbidden: admin role required");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, { password: data.password });
     if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+async function requireAdmin(supabase: any, userId: string) {
+  const { data } = await supabase
+    .from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+  if (!data) throw new Error("Forbidden: admin role required");
+}
+
+export const adminSetRoles = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({
+      user_id: z.string().uuid(),
+      roles: z.array(z.enum(["admin", "manager", "supervisor", "staff"])).min(1).max(4),
+    }).parse(data)
+  )
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.user_id);
+    const unique = Array.from(new Set(data.roles));
+    const rows = unique.map((role) => ({ user_id: data.user_id, role }));
+    const { error } = await supabaseAdmin.from("user_roles").insert(rows);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminSetActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({
+      user_id: z.string().uuid(),
+      active: z.boolean(),
+    }).parse(data)
+  )
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ status: data.active ? "approved" : "rejected" })
+      .eq("id", data.user_id);
+    if (error) throw new Error(error.message);
+    // Optional: revoke all sessions when deactivating
+    if (!data.active) {
+      try { await supabaseAdmin.auth.admin.signOut(data.user_id); } catch {}
+    }
     return { ok: true };
   });
