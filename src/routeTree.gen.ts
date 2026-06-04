@@ -36,6 +36,7 @@ import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/l
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicHooksMonthlyReportsRouteImport } from './routes/api/public/hooks/monthly-reports'
 
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
@@ -175,6 +176,12 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksMonthlyReportsRoute =
+  ApiPublicHooksMonthlyReportsRouteImport.update({
+    id: '/api/public/hooks/monthly-reports',
+    path: '/api/public/hooks/monthly-reports',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/app/timeline': typeof AppTimelineRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/hooks/monthly-reports': typeof ApiPublicHooksMonthlyReportsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -228,6 +236,7 @@ export interface FileRoutesByTo {
   '/app/timeline': typeof AppTimelineRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/hooks/monthly-reports': typeof ApiPublicHooksMonthlyReportsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -258,6 +267,7 @@ export interface FileRoutesById {
   '/app/timeline': typeof AppTimelineRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/hooks/monthly-reports': typeof ApiPublicHooksMonthlyReportsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -289,6 +299,7 @@ export interface FileRouteTypes {
     | '/app/timeline'
     | '/email/unsubscribe'
     | '/lovable/email/suppression'
+    | '/api/public/hooks/monthly-reports'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -318,6 +329,7 @@ export interface FileRouteTypes {
     | '/app/timeline'
     | '/email/unsubscribe'
     | '/lovable/email/suppression'
+    | '/api/public/hooks/monthly-reports'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -347,6 +359,7 @@ export interface FileRouteTypes {
     | '/app/timeline'
     | '/email/unsubscribe'
     | '/lovable/email/suppression'
+    | '/api/public/hooks/monthly-reports'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -364,6 +377,7 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  ApiPublicHooksMonthlyReportsRoute: typeof ApiPublicHooksMonthlyReportsRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -562,6 +576,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/monthly-reports': {
+      id: '/api/public/hooks/monthly-reports'
+      path: '/api/public/hooks/monthly-reports'
+      fullPath: '/api/public/hooks/monthly-reports'
+      preLoaderRoute: typeof ApiPublicHooksMonthlyReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -609,6 +630,7 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  ApiPublicHooksMonthlyReportsRoute: ApiPublicHooksMonthlyReportsRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
