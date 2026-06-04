@@ -7,11 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Activity } from "lucide-react";
+import { Search, Activity, Play, Square } from "lucide-react";
 import { liveDuration, fmtTime } from "@/lib/format";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useServerFn } from "@tanstack/react-start";
+import { adminStartActivity, adminStopActivity } from "@/lib/activities.functions";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
+import { friendlyError } from "@/lib/friendly-error";
 
 export const Route = createFileRoute("/app/monitoring")({ component: Monitoring });
 
@@ -24,12 +30,43 @@ type Row = {
 };
 
 function Monitoring() {
+  const { canManage } = useAuth();
+  const startFn = useServerFn(adminStartActivity);
+  const stopFn = useServerFn(adminStopActivity);
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [dept, setDept] = useState("all");
   const [tick, setTick] = useState(0);
   const [openUser, setOpenUser] = useState<Row | null>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const handleStop = async (activityId: string) => {
+    setBusy(activityId);
+    try {
+      await stopFn({ data: { activity_id: activityId } });
+      toast.success("Activity stopped");
+      await load();
+      if (openUser) await openTimeline(openUser);
+    } catch (e: any) {
+      toast.error(friendlyError({ message: e?.message }));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleStart = async (uid: string, name: string) => {
+    setBusy(uid);
+    try {
+      await startFn({ data: { user_id: uid, reason: "Break", remarks: null } });
+      toast.success(`Started activity for ${name}`);
+      await load();
+    } catch (e: any) {
+      toast.error(friendlyError({ message: e?.message }));
+    } finally {
+      setBusy(null);
+    }
+  };
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000);
@@ -136,6 +173,18 @@ function Monitoring() {
                       {liveDuration(r.active!.out_time)}
                     </span>
                   </div>
+                  {canManage && (
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy === r.active!.id}
+                        onClick={(e) => { e.stopPropagation(); handleStop(r.active!.id); }}
+                      >
+                        <Square className="h-3.5 w-3.5 mr-1.5" /> Stop
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -160,7 +209,19 @@ function Monitoring() {
                   <p className="text-sm font-medium truncate">{r.full_name}</p>
                   <p className="text-xs text-muted-foreground truncate">{r.department ?? "—"}</p>
                 </div>
-                <span className="h-2 w-2 rounded-full bg-success" />
+                {canManage ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2"
+                    disabled={busy === r.id}
+                    onClick={(e) => { e.stopPropagation(); handleStart(r.id, r.full_name); }}
+                  >
+                    <Play className="h-3.5 w-3.5" />
+                  </Button>
+                ) : (
+                  <span className="h-2 w-2 rounded-full bg-success" />
+                )}
               </CardContent>
             </Card>
           ))}
@@ -185,9 +246,16 @@ function Monitoring() {
                     <span className="text-xs text-muted-foreground font-mono">{fmtTime(t.out_time)} → {fmtTime(t.in_time)}</span>
                   </div>
                   {t.remarks && <p className="text-xs text-muted-foreground mt-1">{t.remarks}</p>}
-                  <p className="text-sm font-semibold mt-1">
-                    {t.duration_minutes != null ? `${t.duration_minutes}m` : <span className="text-warning">live · {liveDuration(t.out_time)}</span>}
-                  </p>
+                  <div className="mt-1 flex items-center justify-between">
+                    <p className="text-sm font-semibold">
+                      {t.duration_minutes != null ? `${t.duration_minutes}m` : <span className="text-warning">live · {liveDuration(t.out_time)}</span>}
+                    </p>
+                    {canManage && t.status === "out" && (
+                      <Button size="sm" variant="outline" disabled={busy === t.id} onClick={() => handleStop(t.id)}>
+                        <Square className="h-3.5 w-3.5 mr-1.5" /> Stop
+                      </Button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

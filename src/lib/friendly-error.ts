@@ -4,6 +4,9 @@ export function friendlyError(error: unknown): string {
   const code = e.code ?? "";
   const msg = (e.message ?? "").toLowerCase();
 
+  if (msg.includes("uniq_break_logs_one_open_per_user")) {
+    return "Please stop your current activity before starting a new one.";
+  }
   if (code === "23505" || msg.includes("duplicate key")) return "That value is already in use.";
   if (code === "23503") return "That change references something that no longer exists.";
   if (code === "23502") return "A required field is missing.";
