@@ -36,7 +36,7 @@ export const adminStartActivity = createServerFn({ method: "POST" })
     const remarks = `${data.remarks ?? ""}${data.remarks ? " | " : ""}[admin start]`.trim();
     const { error } = await supabaseAdmin.from("break_logs").insert({
       user_id: data.user_id,
-      reason: data.reason,
+      reason: data.reason as any,
       remarks,
       out_time: new Date().toISOString(),
       status: "out",
