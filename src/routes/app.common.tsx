@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { fmtTime, fmtDuration, liveDuration } from "@/lib/format";
-import { PieChart as PieIcon, Trophy, AlertTriangle } from "lucide-react";
+import { PieChart as PieIcon, Trophy, Clock } from "lucide-react";
 import { useAdminIds } from "@/hooks/use-admin-ids";
 
 export const Route = createFileRoute("/app/common")({ component: Common });
