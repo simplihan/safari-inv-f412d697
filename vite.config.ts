@@ -10,10 +10,9 @@ export default defineConfig({
     tailwindcss(),
     tsconfigPaths(),
     tanstackStart({
-      start: {
-        entry: "./start.ts",
-        router: { entry: "./router.tsx" },
-      },
+      srcDirectory: "src",
+      router: { entry: "./router.tsx" },
+      start: { entry: "./start.ts" },
     }),
     nitro({
       preset: "vercel",
