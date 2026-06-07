@@ -1,12 +1,19 @@
 # Pulse Safari – Implementation Plan
 
+This is a large request (10+ feature areas). I'll ship it in **5 phases** so each is reviewable, testable, and doesn't sit half-broken. Phase 1 covers everything blocking users *right now*; later phases add the deeper modules.
+
 Before I start, two quick questions inline (answer in chat or just say "go with defaults"):
 
-## Phase 1
+1. **Auto-stop timeout** — your spec says both "120 minutes" (Activity Management) and "60 minutes" (Acceptance Criteria). I'll use **120 min** unless you say otherwise.
+2. **Notifications to admins on new access requests** — in-app bell + browser notification only, or also email? I'll do in-app + browser (email needs an email-domain setup turn).
+
+---
+
+## Phase 1 — Rebrand + Critical Fixes (this turn)
 
 Goal: fix everything blocking users today.
 
-- **"Pulse Safari"** everywhere (sidebar, login, register, headers, browser title, device gate, footer).
+- **Rebrand "Pulse Inv" → "Pulse Safari"** everywhere (sidebar, login, register, headers, browser title, device gate, footer).
 - **Register / Access Request fix**: department dropdown made searchable (Command combobox), client-side required-field validation, clearer success toast. Confirm the existing `handle_new_user` trigger still creates the pending profile.
 - **Chat fixes**:
   - Sticky chat header (`sticky top-0` inside the scroll container).
