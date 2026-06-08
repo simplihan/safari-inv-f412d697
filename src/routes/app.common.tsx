@@ -56,9 +56,11 @@ function Common() {
     const filteredLogs = (logs ?? []).filter((l: any) => !adminIds.has(l.user_id));
     const ids = Array.from(new Set(filteredLogs.map((l: any) => l.user_id)));
     const { data: profs } = ids.length
-      ? await supabase.from("profiles").select("id, full_name, department, profile_image").in("id", ids)
+      ? await supabase.rpc("list_directory")
       : { data: [] as any[] };
-    const pmap = new Map((profs ?? []).map((p: any) => [p.id, p]));
+    const pmap = new Map(
+      ((profs ?? []) as any[]).filter((p) => ids.includes(p.id)).map((p) => [p.id, p]),
+    );
     setRows((filteredLogs as Row[]).map((l) => ({ ...l, profile: pmap.get(l.user_id) })));
   };
 
@@ -80,9 +82,11 @@ function Common() {
     // never shows "Unknown".
     const ids = Array.from(new Set(list.map((l) => l.user_id)));
     const { data: profs } = ids.length
-      ? await supabase.from("profiles").select("id, full_name, department, profile_image").in("id", ids)
+      ? await supabase.rpc("list_directory")
       : { data: [] as any[] };
-    const pmap = new Map((profs ?? []).map((p: any) => [p.id, p]));
+    const pmap = new Map(
+      ((profs ?? []) as any[]).filter((p) => ids.includes(p.id)).map((p) => [p.id, p]),
+    );
     setChartRows(list.map((l) => ({ ...l, profile: pmap.get(l.user_id) })));
   };
   useEffect(() => { loadChart(); }, [period, adminIds]);
