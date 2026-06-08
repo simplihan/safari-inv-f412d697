@@ -155,17 +155,17 @@ function Monitoring() {
   }, []);
 
   const load = async () => {
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name, department, profile_image")
-      .eq("status", "approved")
-      .order("full_name");
+    const { data: profiles } = await supabase.rpc("list_directory");
     const { data: open } = await supabase
       .from("break_logs")
       .select("id, user_id, reason, out_time, remarks")
       .eq("status", "out");
     const map = new Map((open ?? []).map((b: any) => [b.user_id, b]));
-    setRows((profiles ?? []).map((p: any) => ({ ...p, active: map.get(p.id) })));
+    setRows(
+      ((profiles ?? []) as any[])
+        .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? ""))
+        .map((p) => ({ ...p, active: map.get(p.id) })),
+    );
   };
 
   useEffect(() => {

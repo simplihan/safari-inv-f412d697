@@ -381,6 +381,16 @@ export type Database = {
         Returns: number
       }
       get_email_by_sgc: { Args: { _sgc: string }; Returns: string }
+      list_directory: {
+        Args: never
+        Returns: {
+          department: string
+          full_name: string
+          id: string
+          profile_image: string
+          status: Database["public"]["Enums"]["user_status"]
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
