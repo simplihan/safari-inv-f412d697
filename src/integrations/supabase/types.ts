@@ -364,30 +364,7 @@ export type Database = {
       }
     }
     Views: {
-      profiles_directory: {
-        Row: {
-          department: string | null
-          full_name: string | null
-          id: string | null
-          profile_image: string | null
-          status: Database["public"]["Enums"]["user_status"] | null
-        }
-        Insert: {
-          department?: string | null
-          full_name?: string | null
-          id?: string | null
-          profile_image?: string | null
-          status?: Database["public"]["Enums"]["user_status"] | null
-        }
-        Update: {
-          department?: string | null
-          full_name?: string | null
-          id?: string | null
-          profile_image?: string | null
-          status?: Database["public"]["Enums"]["user_status"] | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       auto_close_stale_breaks: { Args: never; Returns: undefined }
@@ -404,6 +381,16 @@ export type Database = {
         Returns: number
       }
       get_email_by_sgc: { Args: { _sgc: string }; Returns: string }
+      list_directory: {
+        Args: never
+        Returns: {
+          department: string
+          full_name: string
+          id: string
+          profile_image: string
+          status: Database["public"]["Enums"]["user_status"]
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
