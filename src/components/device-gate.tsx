@@ -6,7 +6,7 @@ const MIN_WIDTH = 1024;
 
 export function DeviceGate({ children }: { children: ReactNode }) {
   const [ok, setOk] = useState<boolean | null>(null);
-  const { isAdmin, loading, session } = useAuth();
+  const { isAdmin, isManager, loading, session } = useAuth();
 
   useEffect(() => {
     const check = () => {
@@ -23,7 +23,7 @@ export function DeviceGate({ children }: { children: ReactNode }) {
   if (ok === null || loading) return null;
   // Always allow when no session yet (login/register/reset pages must reach mobile users)
   // Only admins bypass the desktop-only restriction
-  if (ok || !session || isAdmin) return <>{children}</>;
+  if (ok || !session || isAdmin || isManager) return <>{children}</>;
 
   return (
     <div className="min-h-screen grid place-items-center px-6 text-center bg-background">
