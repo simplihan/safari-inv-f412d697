@@ -9,11 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { recordLoginEvent } from "@/lib/login-events.functions";
+import { signInWithSgcId } from "@/lib/auth.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
 function Login() {
   const navigate = useNavigate();
+  const signIn = useServerFn(signInWithSgcId);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,34 +24,17 @@ function Login() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { data: resolved, error: rpcErr } = await supabase.rpc("get_email_by_sgc", { _sgc: identifier.trim() });
-    if (rpcErr || !resolved) {
-      toast.error("No account found for that SGC ID.");
+    let tokens: { access_token: string; refresh_token: string };
+    try {
+      tokens = await signIn({ data: { sgc_id: identifier.trim(), password } });
+    } catch (err: any) {
+      toast.error(friendlyError({ message: err?.message ?? "Sign-in failed" }));
       setLoading(false);
       return;
     }
-    const email = resolved as string;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      toast.error(friendlyError(error));
-      setLoading(false);
-      return;
-    }
-    // Check status
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("status")
-      .eq("id", data.user!.id)
-      .maybeSingle();
-    if (prof?.status === "rejected") {
-      await supabase.auth.signOut();
-      toast.error("Your access request was rejected.");
-      setLoading(false);
-      return;
-    }
-    if (prof?.status === "pending") {
-      await supabase.auth.signOut();
-      toast.error("Your account is awaiting approval.");
+    const { error: setErr } = await supabase.auth.setSession(tokens);
+    if (setErr) {
+      toast.error(friendlyError(setErr));
       setLoading(false);
       return;
     }

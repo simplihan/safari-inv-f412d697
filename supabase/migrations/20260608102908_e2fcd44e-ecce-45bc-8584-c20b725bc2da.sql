@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.get_email_by_sgc(text) FROM anon, authenticated, public;
