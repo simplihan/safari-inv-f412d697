@@ -19,8 +19,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/friendly-error";
 import { useAdminIds } from "@/hooks/use-admin-ids";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/app/monitoring")({ component: Monitoring });
+
+const REASONS = ["Break", "Lunch", "Prayer", "Shopping", "Meeting", "Other"] as const;
 
 type Row = {
   id: string;
@@ -42,6 +46,9 @@ function Monitoring() {
   const [openUser, setOpenUser] = useState<Row | null>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [startTarget, setStartTarget] = useState<Row | null>(null);
+  const [startReason, setStartReason] = useState<string>("Break");
+  const [startRemarks, setStartRemarks] = useState("");
 
   const handleStop = async (activityId: string) => {
     setBusy(activityId);
@@ -57,11 +64,22 @@ function Monitoring() {
     }
   };
 
-  const handleStart = async (uid: string, name: string) => {
-    setBusy(uid);
+  const openStart = (r: Row) => {
+    setStartTarget(r);
+    setStartReason("Break");
+    setStartRemarks("");
+  };
+
+  const handleStart = async () => {
+    if (!startTarget) return;
+    if (startReason === "Other" && !startRemarks.trim()) {
+      return toast.error("Remarks are required when reason is Other.");
+    }
+    setBusy(startTarget.id);
     try {
-      await startFn({ data: { user_id: uid, reason: "Break", remarks: null } });
-      toast.success(`Started activity for ${name}`);
+      await startFn({ data: { user_id: startTarget.id, reason: startReason, remarks: startRemarks.trim() || null } });
+      toast.success(`Started ${startReason} for ${startTarget.full_name}`);
+      setStartTarget(null);
       await load();
     } catch (e: any) {
       toast.error(friendlyError({ message: e?.message }));
@@ -218,7 +236,7 @@ function Monitoring() {
                     variant="ghost"
                     className="h-7 px-2"
                     disabled={busy === r.id}
-                    onClick={(e) => { e.stopPropagation(); handleStart(r.id, r.full_name); }}
+                    onClick={(e) => { e.stopPropagation(); openStart(r); }}
                   >
                     <Play className="h-3.5 w-3.5" />
                   </Button>
@@ -263,6 +281,44 @@ function Monitoring() {
               ))}
             </ul>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!startTarget} onOpenChange={(o) => !o && setStartTarget(null)}>
+        <DialogContent className="glass-strong">
+          <DialogHeader>
+            <DialogTitle>Start activity — {startTarget?.full_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Reason</Label>
+              <Select value={startReason} onValueChange={setStartReason}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {startReason === "Lunch" && (
+                <p className="text-xs text-muted-foreground mt-1">Lunch is exempt from the 5-person concurrent limit.</p>
+              )}
+            </div>
+            <div>
+              <Label>Remarks {startReason === "Other" && <span className="text-destructive">*</span>}</Label>
+              <Textarea
+                value={startRemarks}
+                onChange={(e) => setStartRemarks(e.target.value)}
+                rows={2}
+                placeholder={startReason === "Other" ? "Required" : "Optional"}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setStartTarget(null)}>Cancel</Button>
+              <Button onClick={handleStart} disabled={busy === startTarget?.id} className="gradient-primary text-primary-foreground border-0">
+                <Play className="h-3.5 w-3.5 mr-1.5" /> Start
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
