@@ -364,7 +364,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_directory: {
+        Row: {
+          department: string | null
+          full_name: string | null
+          id: string | null
+          profile_image: string | null
+          status: Database["public"]["Enums"]["user_status"] | null
+        }
+        Insert: {
+          department?: string | null
+          full_name?: string | null
+          id?: string | null
+          profile_image?: string | null
+          status?: Database["public"]["Enums"]["user_status"] | null
+        }
+        Update: {
+          department?: string | null
+          full_name?: string | null
+          id?: string | null
+          profile_image?: string | null
+          status?: Database["public"]["Enums"]["user_status"] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       auto_close_stale_breaks: { Args: never; Returns: undefined }
