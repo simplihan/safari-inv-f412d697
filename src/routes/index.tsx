@@ -40,7 +40,7 @@ function Landing() {
             Break & activity tracking, <span className="text-gradient">in real time</span>.
           </h1>
           <p className="mt-6 text-lg text-muted-foreground">
-            Modern HR system focused on what really happens between IN and OUT — built for managers who want clarity, and staff who want simplicity.
+            Monitor every activity in real time—from breaks and meetings to field work and productivity—with an intelligent workforce platform built for modern teams.
           </p>
           <div className="mt-10 flex justify-center gap-3">
             <Button asChild size="lg" className="gradient-primary text-primary-foreground border-0 shadow-lg">
@@ -59,7 +59,7 @@ function Landing() {
             { icon: ShieldCheck, title: "Approval workflow", desc: "Pending registrations, role-based access, secure by default." },
           ].map((f, i) => (
 
-            
+           
             <motion.div
               key={f.title}
               initial={{ opacity: 0, y: 20 }}
