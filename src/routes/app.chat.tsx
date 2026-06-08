@@ -113,12 +113,12 @@ function Chat() {
   // load contacts (everyone visible to me — RLS handles dept scoping)
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name, department, profile_image, status")
-        .eq("status", "approved")
-        .order("full_name");
-      setPeople(((data ?? []) as any[]).filter((p) => p.id !== user?.id));
+      const { data } = await supabase.rpc("list_directory");
+      setPeople(
+        ((data ?? []) as any[])
+          .filter((p) => p.id !== user?.id)
+          .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? "")),
+      );
     })();
   }, [user?.id]);
 
