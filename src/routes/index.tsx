@@ -1,4 +1,4 @@
-Modernimport { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ArrowRight, Clock, Activity, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
