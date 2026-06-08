@@ -23,6 +23,12 @@ export const Route = createFileRoute("/api/public/hooks/monthly-reports")({
         if (!supabaseUrl || !serviceKey) {
           return Response.json({ error: "server_misconfigured" }, { status: 500 });
         }
+        // Require shared-secret auth — cron sends service-role key as Bearer token.
+        const auth = request.headers.get("authorization") ?? "";
+        const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+        if (!token || token !== serviceKey) {
+          return Response.json({ error: "unauthorized" }, { status: 401 });
+        }
         const sb = createClient(supabaseUrl, serviceKey, {
           auth: { autoRefreshToken: false, persistSession: false },
         });
