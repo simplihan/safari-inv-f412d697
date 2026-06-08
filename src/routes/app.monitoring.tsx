@@ -7,14 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Activity, Play, Square } from "lucide-react";
+import { Search, Activity, Play, Square, Pencil, Trash2 } from "lucide-react";
 import { liveDuration, fmtTime } from "@/lib/format";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
-import { adminStartActivity, adminStopActivity } from "@/lib/activities.functions";
+import { adminStartActivity, adminStopActivity, adminUpdateActivity, adminDeleteActivity } from "@/lib/activities.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/friendly-error";
@@ -35,10 +35,12 @@ type Row = {
 };
 
 function Monitoring() {
-  const { canManage } = useAuth();
+  const { canManage, isAdmin } = useAuth();
   const adminIds = useAdminIds();
   const startFn = useServerFn(adminStartActivity);
   const stopFn = useServerFn(adminStopActivity);
+  const updateFn = useServerFn(adminUpdateActivity);
+  const deleteFn = useServerFn(adminDeleteActivity);
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [dept, setDept] = useState("all");
@@ -49,6 +51,11 @@ function Monitoring() {
   const [startTarget, setStartTarget] = useState<Row | null>(null);
   const [startReason, setStartReason] = useState<string>("Break");
   const [startRemarks, setStartRemarks] = useState("");
+  const [editTarget, setEditTarget] = useState<any | null>(null);
+  const [editReason, setEditReason] = useState<string>("Break");
+  const [editRemarks, setEditRemarks] = useState("");
+  const [editOut, setEditOut] = useState("");
+  const [editIn, setEditIn] = useState("");
 
   const handleStop = async (activityId: string) => {
     setBusy(activityId);
@@ -81,6 +88,60 @@ function Monitoring() {
       toast.success(`Started ${startReason} for ${startTarget.full_name}`);
       setStartTarget(null);
       await load();
+    } catch (e: any) {
+      toast.error(friendlyError({ message: e?.message }));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const toLocalInput = (iso?: string | null) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const openEdit = (t: any) => {
+    setEditTarget(t);
+    setEditReason(t.reason);
+    setEditRemarks(t.remarks ?? "");
+    setEditOut(toLocalInput(t.out_time));
+    setEditIn(toLocalInput(t.in_time));
+  };
+
+  const saveEdit = async () => {
+    if (!editTarget) return;
+    setBusy(editTarget.id);
+    try {
+      await updateFn({
+        data: {
+          activity_id: editTarget.id,
+          reason: editReason as any,
+          remarks: editRemarks.trim() || null,
+          out_time: new Date(editOut).toISOString(),
+          in_time: editIn ? new Date(editIn).toISOString() : null,
+        },
+      });
+      toast.success("Activity updated");
+      setEditTarget(null);
+      await load();
+      if (openUser) await openTimeline(openUser);
+    } catch (e: any) {
+      toast.error(friendlyError({ message: e?.message }));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this activity? This cannot be undone.")) return;
+    setBusy(id);
+    try {
+      await deleteFn({ data: { activity_id: id } });
+      toast.success("Activity deleted");
+      await load();
+      if (openUser) await openTimeline(openUser);
     } catch (e: any) {
       toast.error(friendlyError({ message: e?.message }));
     } finally {
@@ -276,11 +337,58 @@ function Monitoring() {
                         <Square className="h-3.5 w-3.5 mr-1.5" /> Stop
                       </Button>
                     )}
+                    {isAdmin && (
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" className="h-7 px-2" disabled={busy === t.id} onClick={() => openEdit(t)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive" disabled={busy === t.id} onClick={() => handleDelete(t.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </li>
               ))}
             </ul>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
+        <DialogContent className="glass-strong">
+          <DialogHeader>
+            <DialogTitle>Edit activity</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Reason</Label>
+              <Select value={editReason} onValueChange={setEditReason}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Out time</Label>
+                <Input type="datetime-local" value={editOut} onChange={(e) => setEditOut(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label>In time (blank = still out)</Label>
+                <Input type="datetime-local" value={editIn} onChange={(e) => setEditIn(e.target.value)} className="mt-1" />
+              </div>
+            </div>
+            <div>
+              <Label>Remarks</Label>
+              <Textarea value={editRemarks} onChange={(e) => setEditRemarks(e.target.value)} rows={2} className="mt-1" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+              <Button onClick={saveEdit} disabled={busy === editTarget?.id} className="gradient-primary text-primary-foreground border-0">Save</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
