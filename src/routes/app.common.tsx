@@ -315,7 +315,7 @@ function Common() {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium truncate">{r.profile?.full_name ?? "Unknown"}</p>
                       <Badge variant="secondary">{r.reason}</Badge>
-                      {r.status === "out" && <Badge className="bg-warning/20 text-foreground border-warning/40">Live</Badge>}
+                      {r.status === "out" && <Badge className="bg-warning/20 text-foreground border-warning/40 animate-pulse">Live</Badge>}
                       {r.profile?.department && <span className="text-xs text-muted-foreground">· {r.profile.department}</span>}
                     </div>
                     {r.remarks && <p className="text-xs text-muted-foreground mt-0.5">"{r.remarks}"</p>}
