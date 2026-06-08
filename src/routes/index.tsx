@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+Modernimport { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ArrowRight, Clock, Activity, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,8 @@ function Landing() {
             { icon: Users, title: "Live monitoring", desc: "See exactly who is out and for how long, updated instantly." },
             { icon: ShieldCheck, title: "Approval workflow", desc: "Pending registrations, role-based access, secure by default." },
           ].map((f, i) => (
+
+            
             <motion.div
               key={f.title}
               initial={{ opacity: 0, y: 20 }}
