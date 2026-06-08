@@ -21,7 +21,8 @@ import { useDepartments } from "@/hooks/use-departments";
 export const Route = createFileRoute("/app/staff")({ component: Staff });
 
 function Staff() {
-  const { canManage, isAdmin } = useAuth();
+  const { canManage, isAdmin, isManager } = useAuth();
+  const canEdit = isAdmin || isManager;
   const setActive = useServerFn(adminSetActive);
   const [rows, setRows] = useState<any[]>([]);
   const [q, setQ] = useState("");
@@ -99,9 +100,11 @@ function Staff() {
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{r.email} · {r.department ?? "—"}</p>
               </div>
-              <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
-                <Pencil className="h-4 w-4 mr-1" /> Edit
-              </Button>
+              {canEdit && (
+                <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
+                  <Pencil className="h-4 w-4 mr-1" /> Edit
+                </Button>
+              )}
               {isAdmin && (
                 <Button
                   size="sm"
