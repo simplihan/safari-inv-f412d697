@@ -153,7 +153,7 @@ function Dashboard() {
                     <span className="text-sm text-muted-foreground">since {fmtTime(active.out_time)}</span>
                   </div>
                   {active.remarks && <p className="mt-2 text-sm text-muted-foreground">"{active.remarks}"</p>}
-                  <p className="mt-4 text-4xl font-bold tabular-nums text-gradient" key={tick}>
+                  <p className="mt-4 text-4xl font-bold tabular-nums text-gradient animate-pulse" key={tick}>
                     {liveDuration(active.out_time)}
                   </p>
                 </div>
