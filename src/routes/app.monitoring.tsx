@@ -181,7 +181,6 @@ function Monitoring() {
   const departments = useMemo(() => Array.from(new Set(rows.map((r) => r.department).filter(Boolean))) as string[], [rows]);
 
   const filtered = rows.filter((r) => {
-    if (adminIds.has(r.id)) return false;
     if (dept !== "all" && r.department !== dept) return false;
     if (q && !r.full_name.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
