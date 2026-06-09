@@ -59,6 +59,16 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // Approval gate: only approved profiles can trigger app emails.
+        const { data: callerProfile, error: profErr } = await supabase
+          .from('profiles')
+          .select('status')
+          .eq('id', user.id)
+          .maybeSingle()
+        if (profErr || !callerProfile || callerProfile.status !== 'approved') {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         // Parse request body
         let templateName: string
         let recipientEmail: string
@@ -94,9 +104,7 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
         if (!template) {
           console.error('Template not found in registry', { templateName })
           return Response.json(
-            {
-              error: `Template '${templateName}' not found. Available: ${Object.keys(TEMPLATES).join(', ')}`,
-            },
+            { error: 'Template not found' },
             { status: 404 }
           )
         }
