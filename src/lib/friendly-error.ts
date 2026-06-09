@@ -10,7 +10,12 @@ export function friendlyError(error: unknown): string {
   if (code === "23505" || msg.includes("duplicate key")) return "That value is already in use.";
   if (code === "23503") return "That change references something that no longer exists.";
   if (code === "23502") return "A required field is missing.";
-  if (code === "23514" || msg.includes("check constraint")) return "That value isn't allowed.";
+  if (code === "23514" || msg.includes("check constraint")) {
+    if (msg.includes("staff members are already out")) {
+      return "5 staff members are already out. Please wait for them to return before stepping out.";
+    }
+    return "That value isn't allowed.";
+  }
   if (code === "42501" || code === "insufficient_privilege" || msg.includes("not allowed") || msg.includes("permission")) {
     return "You don't have permission to do that.";
   }
