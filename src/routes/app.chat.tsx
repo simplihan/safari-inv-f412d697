@@ -221,7 +221,8 @@ function Chat() {
 
   const sameDept = (p: Person) =>
     !!profile?.department && p.department === profile.department;
-  const canMessage = active ? (sameDept(active) && (canManage || myDeptChatOn)) : false;
+  // Allow chat across departments — restrict only by the global on/off toggle for non-managers.
+  const canMessage = active ? (canManage || myDeptChatOn) : false;
 
   if (!canManage && !myDeptChatOn) {
     return (
@@ -273,7 +274,7 @@ function Chat() {
               {filtered.map((p) => {
                 const last = lastMsg[p.id];
                 const mineLast = last && last.sender_id === user?.id;
-                const preview = last?.content ?? (sameDept(p) ? "Say hi 👋" : "Different department");
+                const preview = last?.content ?? "Say hi 👋";
                 return (
                   <li key={p.id}>
                     <button
