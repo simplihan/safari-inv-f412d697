@@ -53,7 +53,7 @@ function Common() {
       .select("*")
       .gte("out_time", start.toISOString())
       .order("out_time", { ascending: false });
-    const filteredLogs = (logs ?? []).filter((l: any) => !adminIds.has(l.user_id));
+    const filteredLogs = (logs ?? []);
     const ids = Array.from(new Set(filteredLogs.map((l: any) => l.user_id)));
     const { data: profs } = ids.length
       ? await supabase.rpc("list_directory")
@@ -77,7 +77,7 @@ function Common() {
       .from("break_logs").select("*")
       .gte("out_time", start.toISOString())
       .order("out_time", { ascending: false });
-    const list = ((logs ?? []) as Row[]).filter((l) => !adminIds.has(l.user_id));
+    const list = ((logs ?? []) as Row[]);
     // Hydrate profiles for everyone in this chart range so the user picker
     // never shows "Unknown".
     const ids = Array.from(new Set(list.map((l) => l.user_id)));
@@ -155,7 +155,6 @@ function Common() {
   const overview = useMemo(() => {
     const perUser = new Map<string, { id: string; name: string; dept: string | null; img: string | null; breakMin: number }>();
     people.forEach((p) => {
-      if (adminIds.has(p.id)) return;
       perUser.set(p.id, { ...p, breakMin: breakMinFor(p.id) });
     });
     const list = Array.from(perUser.values());
