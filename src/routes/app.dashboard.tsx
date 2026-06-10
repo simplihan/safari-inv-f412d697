@@ -34,7 +34,7 @@ function Dashboard() {
   const { user, profile, canManage } = useAuth();
   const [active, setActive] = useState<BreakLog | null>(null);
   const [today, setToday] = useState<BreakLog[]>([]);
-  const [reason, setReason] = useState<string>("Break");
+  const [reason, setReason] = useState<string>("Tea Break");
   const [remarks, setRemarks] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [tick, setTick] = useState(0);
@@ -108,7 +108,7 @@ function Dashboard() {
     if (error) return toast.error(friendlyError(error));
     toast.success(`Marked OUT — ${reason}`);
     setRemarks("");
-    setReason("Break");
+    setReason("Tea Break");
   };
 
   const goIn = async () => {
