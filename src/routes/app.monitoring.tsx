@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/friendly-error";
 import { useAdminIds } from "@/hooks/use-admin-ids";
+import { useVisibleIds } from "@/hooks/use-visible-ids";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -37,6 +38,7 @@ type Row = {
 function Monitoring() {
   const { canManage, isAdmin } = useAuth();
   const adminIds = useAdminIds();
+  const { ids: visibleIds } = useVisibleIds();
   const startFn = useServerFn(adminStartActivity);
   const stopFn = useServerFn(adminStopActivity);
   const updateFn = useServerFn(adminUpdateActivity);
@@ -163,6 +165,7 @@ function Monitoring() {
     const map = new Map((open ?? []).map((b: any) => [b.user_id, b]));
     setRows(
       ((profiles ?? []) as any[])
+        .filter((p) => visibleIds.has(p.id))
         .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? ""))
         .map((p) => ({ ...p, active: map.get(p.id) })),
     );
@@ -176,7 +179,7 @@ function Monitoring() {
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [visibleIds]);
 
   const departments = useMemo(() => Array.from(new Set(rows.map((r) => r.department).filter(Boolean))) as string[], [rows]);
 
