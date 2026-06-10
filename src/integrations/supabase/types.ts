@@ -391,6 +391,12 @@ export type Database = {
           status: Database["public"]["Enums"]["user_status"]
         }[]
       }
+      list_visible_user_ids: {
+        Args: never
+        Returns: {
+          user_id: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
