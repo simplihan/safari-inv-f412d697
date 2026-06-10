@@ -42,7 +42,12 @@ export const adminStartActivity = createServerFn({ method: "POST" })
       out_time: new Date().toISOString(),
       status: "out",
     });
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (error.message?.includes("staff members are already out")) {
+        throw new Error("Five staff members are already out. Please wait for them to return before stepping out.");
+      }
+      throw new Error(error.message);
+    }
     return { ok: true };
   });
 
