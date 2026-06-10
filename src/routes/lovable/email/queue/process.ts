@@ -35,6 +35,19 @@ function getRetryAfterSeconds(error: unknown): number {
   return 60
 }
 
+function isAuthorizedScheduler(request: Request, serviceKey: string): boolean {
+  const authHeader = request.headers.get('Authorization') ?? ''
+  const bearerToken = authHeader.toLowerCase().startsWith('bearer ')
+    ? authHeader.slice(7).trim()
+    : ''
+  const cronSecret = process.env.CRON_SECRET
+
+  if (bearerToken && bearerToken === serviceKey) return true
+  if (cronSecret && request.headers.get('x-cron-secret') === cronSecret) return true
+
+  return false
+}
+
 async function moveToDlq(
   supabase: SupabaseClient<any, any>,
   queue: string,
@@ -76,19 +89,10 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
           )
         }
 
-        // Verify the caller is authorized using the Supabase publishable (anon) key
-        // via the `apikey` header. The anon key is safe to transmit in HTTP headers,
-        // unlike the service role key (which bypasses RLS). The service role key is
-        // only used server-side below to actually perform privileged DB operations.
-        const supabasePublishableKey =
-          process.env.SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-        const apiKeyHeader = request.headers.get('apikey') ?? ''
-        const authHeader = request.headers.get('Authorization') ?? ''
-        const bearerToken = authHeader.toLowerCase().startsWith('bearer ')
-          ? authHeader.slice(7).trim()
-          : ''
-        const presented = apiKeyHeader || bearerToken
-        if (!supabasePublishableKey || presented !== supabasePublishableKey) {
+        // This endpoint drains and sends queued email, so the public browser key is
+        // not accepted. Cron callers must present a server-only credential in
+        // Authorization: Bearer <service-role key> or x-cron-secret.
+        if (!isAuthorizedScheduler(request, supabaseServiceKey)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
 

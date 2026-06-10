@@ -14,6 +14,17 @@ function genToken() {
   return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+function isAuthorizedScheduler(request: Request, serviceKey: string) {
+  const auth = request.headers.get("authorization") ?? "";
+  const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (bearer && bearer === serviceKey) return true;
+  if (cronSecret && request.headers.get("x-cron-secret") === cronSecret) return true;
+
+  return false;
+}
+
 export const Route = createFileRoute("/api/public/hooks/monthly-reports")({
   server: {
     handlers: {
@@ -23,16 +34,10 @@ export const Route = createFileRoute("/api/public/hooks/monthly-reports")({
         if (!supabaseUrl || !serviceKey) {
           return Response.json({ error: "server_misconfigured" }, { status: 500 });
         }
-        // Authenticate cron caller via the Supabase publishable (anon) key in the
-        // `apikey` header. The service role key is never accepted from HTTP — it
-        // stays server-side and is only used to authorize DB operations below.
-        const publishableKey =
-          process.env.SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const apiKeyHeader = request.headers.get("apikey") ?? "";
-        const auth = request.headers.get("authorization") ?? "";
-        const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
-        const presented = apiKeyHeader || bearer;
-        if (!publishableKey || presented !== publishableKey) {
+        // This endpoint performs privileged report generation, so the public
+        // browser key is not accepted. Cron callers must present a server-only
+        // credential in Authorization: Bearer <service-role key> or x-cron-secret.
+        if (!isAuthorizedScheduler(request, serviceKey)) {
           return Response.json({ error: "unauthorized" }, { status: 401 });
         }
         const sb = createClient(supabaseUrl, serviceKey, {
