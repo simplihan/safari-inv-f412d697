@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Activity, Play, Square, Pencil, Trash2 } from "lucide-react";
-import { liveDuration, fmtTime } from "@/lib/format";
+import { liveDuration, fmtTime, reasonLabel, toDbReason } from "@/lib/format";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/app/monitoring")({ component: Monitoring });
 
-const REASONS = ["Break", "Lunch", "Prayer", "Shopping", "Meeting", "Other"] as const;
+const REASONS = ["Tea Break", "Lunch", "Prayer", "Shopping", "Meeting", "Other"] as const;
 
 type Row = {
   id: string;
@@ -86,7 +86,7 @@ function Monitoring() {
     }
     setBusy(startTarget.id);
     try {
-      await startFn({ data: { user_id: startTarget.id, reason: startReason, remarks: startRemarks.trim() || null } });
+      await startFn({ data: { user_id: startTarget.id, reason: toDbReason(startReason), remarks: startRemarks.trim() || null } });
       toast.success(`Started ${startReason} for ${startTarget.full_name}`);
       setStartTarget(null);
       await load();
@@ -119,7 +119,7 @@ function Monitoring() {
       await updateFn({
         data: {
           activity_id: editTarget.id,
-          reason: editReason as any,
+          reason: toDbReason(editReason),
           remarks: editRemarks.trim() || null,
           out_time: new Date(editOut).toISOString(),
           in_time: editIn ? new Date(editIn).toISOString() : null,
@@ -249,7 +249,7 @@ function Monitoring() {
                       <p className="font-semibold truncate">{r.full_name}</p>
                       <p className="text-xs text-muted-foreground truncate">{r.department}</p>
                     </div>
-                    <Badge className="bg-warning/20 text-foreground border-warning/40">{r.active!.reason}</Badge>
+                    <Badge className="bg-warning/20 text-foreground border-warning/40">{reasonLabel(r.active!.reason)}</Badge>
                   </div>
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">since {fmtTime(r.active!.out_time)}</span>
@@ -326,7 +326,7 @@ function Monitoring() {
               {timeline.map((t: any) => (
                 <li key={t.id} className="rounded-lg border border-border p-3">
                   <div className="flex items-center justify-between">
-                    <Badge variant="secondary">{t.reason}</Badge>
+                    <Badge variant="secondary">{reasonLabel(t.reason)}</Badge>
                     <span className="text-xs text-muted-foreground font-mono">{fmtTime(t.out_time)} → {fmtTime(t.in_time)}</span>
                   </div>
                   {t.remarks && <p className="text-xs text-muted-foreground mt-1">{t.remarks}</p>}
