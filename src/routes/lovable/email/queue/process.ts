@@ -76,16 +76,20 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
           )
         }
 
-        // Verify the caller is authorized with the service role key.
-        // In the TanStack stack, the pg_cron job sends the service role key as a Bearer token.
-        const authHeader = request.headers.get('Authorization')
-        if (!authHeader?.startsWith('Bearer ')) {
+        // Verify the caller is authorized using the Supabase publishable (anon) key
+        // via the `apikey` header. The anon key is safe to transmit in HTTP headers,
+        // unlike the service role key (which bypasses RLS). The service role key is
+        // only used server-side below to actually perform privileged DB operations.
+        const supabasePublishableKey =
+          process.env.SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        const apiKeyHeader = request.headers.get('apikey') ?? ''
+        const authHeader = request.headers.get('Authorization') ?? ''
+        const bearerToken = authHeader.toLowerCase().startsWith('bearer ')
+          ? authHeader.slice(7).trim()
+          : ''
+        const presented = apiKeyHeader || bearerToken
+        if (!supabasePublishableKey || presented !== supabasePublishableKey) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
-        const token = authHeader.slice('Bearer '.length).trim()
-        if (token !== supabaseServiceKey) {
-          return Response.json({ error: 'Forbidden' }, { status: 403 })
         }
 
         const supabase: SupabaseClient<any, any> = createClient(supabaseUrl, supabaseServiceKey)

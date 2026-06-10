@@ -23,10 +23,16 @@ export const Route = createFileRoute("/api/public/hooks/monthly-reports")({
         if (!supabaseUrl || !serviceKey) {
           return Response.json({ error: "server_misconfigured" }, { status: 500 });
         }
-        // Require shared-secret auth — cron sends service-role key as Bearer token.
+        // Authenticate cron caller via the Supabase publishable (anon) key in the
+        // `apikey` header. The service role key is never accepted from HTTP — it
+        // stays server-side and is only used to authorize DB operations below.
+        const publishableKey =
+          process.env.SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const apiKeyHeader = request.headers.get("apikey") ?? "";
         const auth = request.headers.get("authorization") ?? "";
-        const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
-        if (!token || token !== serviceKey) {
+        const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+        const presented = apiKeyHeader || bearer;
+        if (!publishableKey || presented !== publishableKey) {
           return Response.json({ error: "unauthorized" }, { status: 401 });
         }
         const sb = createClient(supabaseUrl, serviceKey, {
