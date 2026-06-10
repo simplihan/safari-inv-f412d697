@@ -24,3 +24,13 @@ export function fmtDateTime(iso?: string | null) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString();
 }
+
+export function reasonLabel(reason?: string | null) {
+  if (reason === "Break") return "Tea Break";
+  return reason ?? "—";
+}
+
+export function toDbReason(label: string) {
+  if (label === "Tea Break") return "Break";
+  return label;
+}
