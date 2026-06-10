@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { LogOut, LogIn, Clock, Activity, Coffee, Users as UsersIcon } from "lucide-react";
 import { toast } from "sonner";
-import { liveDuration, fmtDuration, fmtTime } from "@/lib/format";
+import { liveDuration, fmtDuration, fmtTime, reasonLabel, toDbReason } from "@/lib/format";
 import { Monitor, Smartphone, Tablet } from "lucide-react";
 
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
