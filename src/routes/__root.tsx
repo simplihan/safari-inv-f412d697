@@ -66,7 +66,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "google-site-verification", content: "VHO3G5ISJlHjx4lNKpErxyJQBUhHMAqj_f6-roCmXPw" },
       { title: "Pulse Safari — Break & Activity Tracking" },
       {
         name: "description",
