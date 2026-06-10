@@ -25,7 +25,14 @@ import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/app/monitoring")({ component: Monitoring });
 
-const REASONS = ["Break", "Lunch", "Prayer", "Shopping", "Meeting", "Other"] as const;
+const REASONS = [
+  { value: "Break", label: "Tea Break" },
+  { value: "Lunch", label: "Lunch" },
+  { value: "Prayer", label: "Prayer" },
+  { value: "Shopping", label: "Shopping" },
+  { value: "Meeting", label: "Meeting" },
+  { value: "Other", label: "Other" },
+] as const;
 
 type Row = {
   id: string;
