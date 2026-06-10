@@ -15,11 +15,13 @@ async function requireAdminOrManager(supabase: any, userId: string) {
 export const adminStartActivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({
-      user_id: z.string().uuid(),
-      reason: z.string().min(1).max(40),
-      remarks: z.string().max(500).optional().nullable(),
-    }).parse(d)
+    z
+      .object({
+        user_id: z.string().uuid(),
+        reason: z.string().min(1).max(40),
+        remarks: z.string().max(500).optional().nullable(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -87,18 +89,23 @@ async function requireAdmin(supabase: any, userId: string) {
 export const adminUpdateActivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({
-      activity_id: z.string().uuid(),
-      reason: z.enum(["Break", "Lunch", "Prayer", "Shopping", "Meeting", "Other"]).optional(),
-      remarks: z.string().max(500).optional().nullable(),
-      out_time: z.string().datetime().optional(),
-      in_time: z.string().datetime().nullable().optional(),
-    }).parse(d)
+    z
+      .object({
+        activity_id: z.string().uuid(),
+        reason: z.enum(["Tea Break", "Lunch", "Prayer", "Shopping", "Meeting", "Other"]).optional(),
+        remarks: z.string().max(500).optional().nullable(),
+        out_time: z.string().datetime().optional(),
+        in_time: z.string().datetime().nullable().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const { data: row } = await supabaseAdmin
-      .from("break_logs").select("out_time, in_time, status").eq("id", data.activity_id).maybeSingle();
+      .from("break_logs")
+      .select("out_time, in_time, status")
+      .eq("id", data.activity_id)
+      .maybeSingle();
     if (!row) throw new Error("Activity not found.");
 
     const patch: any = {};
@@ -111,7 +118,10 @@ export const adminUpdateActivity = createServerFn({ method: "POST" })
     const newIn = patch.in_time !== undefined ? patch.in_time : row.in_time;
     if (newIn) {
       patch.status = "in";
-      patch.duration_minutes = Math.max(1, Math.round((new Date(newIn).getTime() - new Date(newOut).getTime()) / 60000));
+      patch.duration_minutes = Math.max(
+        1,
+        Math.round((new Date(newIn).getTime() - new Date(newOut).getTime()) / 60000),
+      );
     } else {
       patch.status = "out";
       patch.duration_minutes = null;
