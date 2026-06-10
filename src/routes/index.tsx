@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ArrowRight, Clock, Activity, ShieldCheck, Users } from "lucide-react";
+import { ArrowRight, Clock, Activity, ShieldCheck, Users, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -52,11 +52,22 @@ function Landing() {
           </div>
         </motion.div>
 
-        <div className="mt-24 grid gap-6 md:grid-cols-3">
+        <div className="mt-24 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[
             { icon: Clock, title: "Multi-OUT tracking", desc: "Log breaks, prayer, lunch, meetings — auto-calculated durations." },
             { icon: Users, title: "Live monitoring", desc: "See exactly who is out and for how long, updated instantly." },
             { icon: ShieldCheck, title: "Approval workflow", desc: "Pending registrations, role-based access, secure by default." },
+            {
+              icon: Mail,
+              title: "Contact us",
+              desc: (
+                <>
+                  Email — <a href="mailto:harendra@simplihan.com" className="text-primary hover:underline">harendra@simplihan.com</a>
+                  <br />
+                  Mobile — <a href="tel:+97477707912" className="text-primary hover:underline">+974-77707912</a>
+                </>
+              ),
+            },
           ].map((f, i) => (
 
            
