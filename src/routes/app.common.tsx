@@ -11,6 +11,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recha
 import { fmtTime, fmtDuration, liveDuration } from "@/lib/format";
 import { PieChart as PieIcon, Trophy, Clock } from "lucide-react";
 import { useAdminIds } from "@/hooks/use-admin-ids";
+import { useVisibleIds } from "@/hooks/use-visible-ids";
 
 export const Route = createFileRoute("/app/common")({ component: Common });
 
@@ -32,6 +33,7 @@ type Row = {
 function Common() {
   const { user, profile, canManage } = useAuth();
   const adminIds = useAdminIds();
+  const { ids: visibleIds, ready: visibleReady } = useVisibleIds();
   const [rows, setRows] = useState<Row[]>([]);
   const [chartRows, setChartRows] = useState<Row[]>([]);
   const [period, setPeriod] = useState<Period>("day");
@@ -53,7 +55,7 @@ function Common() {
       .select("*")
       .gte("out_time", start.toISOString())
       .order("out_time", { ascending: false });
-    const filteredLogs = (logs ?? []);
+    const filteredLogs = ((logs ?? []) as Row[]).filter((l) => visibleIds.has(l.user_id));
     const ids = Array.from(new Set(filteredLogs.map((l: any) => l.user_id)));
     const { data: profs } = ids.length
       ? await supabase.rpc("list_directory")
@@ -77,7 +79,7 @@ function Common() {
       .from("break_logs").select("*")
       .gte("out_time", start.toISOString())
       .order("out_time", { ascending: false });
-    const list = ((logs ?? []) as Row[]);
+    const list = ((logs ?? []) as Row[]).filter((l) => visibleIds.has(l.user_id));
     // Hydrate profiles for everyone in this chart range so the user picker
     // never shows "Unknown".
     const ids = Array.from(new Set(list.map((l) => l.user_id)));
@@ -89,16 +91,17 @@ function Common() {
     );
     setChartRows(list.map((l) => ({ ...l, profile: pmap.get(l.user_id) })));
   };
-  useEffect(() => { loadChart(); }, [period, adminIds]);
+  useEffect(() => { if (visibleReady) loadChart(); }, [period, visibleIds, visibleReady]);
 
   useEffect(() => {
+    if (!visibleReady) return;
     load();
     const ch = supabase
       .channel("common-feed")
       .on("postgres_changes", { event: "*", schema: "public", table: "break_logs" }, () => { load(); loadChart(); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [adminIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [visibleIds, visibleReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // people visible to me (combine activity feed + chart data so the selector covers the whole period)
   const people = useMemo(() => {
