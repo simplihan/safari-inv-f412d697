@@ -17,7 +17,7 @@ import { Monitor, Smartphone, Tablet } from "lucide-react";
 
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
 
-const REASONS = ["Break", "Lunch", "Prayer", "Shopping", "Meeting", "Other"] as const;
+const REASONS = ["Tea Break", "Lunch", "Prayer", "Shopping", "Meeting", "Other"] as const;
 
 type BreakLog = {
   id: string;
@@ -85,7 +85,9 @@ function Dashboard() {
       .channel("breaks-self")
       .on("postgres_changes", { event: "*", schema: "public", table: "break_logs" }, () => load())
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -133,7 +135,12 @@ function Dashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard icon={Activity} label="Status" value={active ? "OUT" : "IN"} accent={active ? "warning" : "success"} />
+        <StatCard
+          icon={Activity}
+          label="Status"
+          value={active ? "OUT" : "IN"}
+          accent={active ? "warning" : "success"}
+        />
         <StatCard icon={Clock} label="Time out today" value={fmtDuration(totalMinToday)} />
         <StatCard icon={Coffee} label="Sessions today" value={String(today.length)} />
       </div>
@@ -157,7 +164,12 @@ function Dashboard() {
                     {liveDuration(active.out_time)}
                   </p>
                 </div>
-                <Button onClick={goIn} disabled={submitting} size="lg" className="gradient-primary text-primary-foreground border-0 shadow-lg">
+                <Button
+                  onClick={goIn}
+                  disabled={submitting}
+                  size="lg"
+                  className="gradient-primary text-primary-foreground border-0 shadow-lg"
+                >
                   <LogIn className="h-4 w-4 mr-2" /> Mark IN
                 </Button>
               </div>
@@ -166,9 +178,15 @@ function Dashboard() {
                 <div>
                   <Label>Reason</Label>
                   <Select value={reason} onValueChange={setReason}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      {REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                      {REASONS.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -182,7 +200,12 @@ function Dashboard() {
                     className="mt-1"
                   />
                 </div>
-                <Button onClick={goOut} disabled={submitting} size="lg" className="md:col-span-2 gradient-primary text-primary-foreground border-0 shadow-lg">
+                <Button
+                  onClick={goOut}
+                  disabled={submitting}
+                  size="lg"
+                  className="md:col-span-2 gradient-primary text-primary-foreground border-0 shadow-lg"
+                >
                   <LogOut className="h-4 w-4 mr-2" /> Mark OUT
                 </Button>
               </div>
@@ -193,7 +216,11 @@ function Dashboard() {
 
       {canManage && (
         <Card className="glass border-border">
-          <CardHeader><CardTitle className="flex items-center gap-2"><UsersIcon className="h-4 w-4" /> Team snapshot</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UsersIcon className="h-4 w-4" /> Team snapshot
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-gradient">{outNow}</p>
             <p className="text-sm text-muted-foreground">people currently out</p>
@@ -203,7 +230,9 @@ function Dashboard() {
 
       {/* Today's sessions */}
       <Card className="glass border-border">
-        <CardHeader><CardTitle>Today's sessions</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Today's sessions</CardTitle>
+        </CardHeader>
         <CardContent>
           {today.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No breaks yet today.</p>
@@ -214,14 +243,22 @@ function Dashboard() {
                   <div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{b.reason}</Badge>
-                      {b.status === "out" && <Badge className="bg-warning/20 text-foreground border-warning/40">Live</Badge>}
+                      {b.status === "out" && (
+                        <Badge className="bg-warning/20 text-foreground border-warning/40">Live</Badge>
+                      )}
                     </div>
                     {b.remarks && <p className="text-xs text-muted-foreground mt-1">{b.remarks}</p>}
                   </div>
                   <div className="text-right text-sm">
-                    <p className="font-mono">{fmtTime(b.out_time)} → {fmtTime(b.in_time)}</p>
+                    <p className="font-mono">
+                      {fmtTime(b.out_time)} → {fmtTime(b.in_time)}
+                    </p>
                     <p className="text-muted-foreground">
-                      {b.duration_minutes != null ? fmtDuration(b.duration_minutes) : <span className="tabular-nums">{liveDuration(b.out_time)}</span>}
+                      {b.duration_minutes != null ? (
+                        fmtDuration(b.duration_minutes)
+                      ) : (
+                        <span className="tabular-nums">{liveDuration(b.out_time)}</span>
+                      )}
                     </p>
                   </div>
                 </li>
@@ -232,7 +269,9 @@ function Dashboard() {
       </Card>
 
       <Card className="glass border-border">
-        <CardHeader><CardTitle>Recent sign-ins</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Recent sign-ins</CardTitle>
+        </CardHeader>
         <CardContent>
           {logins.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">No recent sign-ins recorded.</p>
@@ -264,10 +303,22 @@ function Dashboard() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, accent }: { icon: any; label: string; value: string; accent?: "success" | "warning" }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: any;
+  label: string;
+  value: string;
+  accent?: "success" | "warning";
+}) {
   return (
     <div className="glass rounded-2xl p-5 flex items-center gap-4">
-      <div className={`h-12 w-12 rounded-xl grid place-items-center ${accent === "warning" ? "bg-warning/20" : accent === "success" ? "bg-success/20" : "gradient-primary"}`}>
+      <div
+        className={`h-12 w-12 rounded-xl grid place-items-center ${accent === "warning" ? "bg-warning/20" : accent === "success" ? "bg-success/20" : "gradient-primary"}`}
+      >
         <Icon className={`h-5 w-5 ${accent ? "text-foreground" : "text-primary-foreground"}`} />
       </div>
       <div>
