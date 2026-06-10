@@ -1,12 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  Outlet,
-  Link,
-  createRootRouteWithContext,
-  useRouter,
-  HeadContent,
-  Scripts,
-} from "@tanstack/react-router";
+import { Outlet, Link, createRootRouteWithContext, useRouter, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -43,9 +36,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">This page didn't load</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Something went wrong on our end. You can try refreshing or head back home.
         </p>
@@ -77,16 +68,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Pulse Safari — Break & Activity Tracking" },
-      { name: "description", content: "Realtime break and outside-activity tracking for modern HR teams." },
+      {
+        name: "description",
+        content: "Real-time workforce break and external activity monitoring for modern Department.",
+      },
       { property: "og:title", content: "Pulse Safari — Break & Activity Tracking" },
-      { property: "og:description", content: "Realtime break and outside-activity tracking for modern HR teams." },
+      { property: "og:description", content: "Realtime break and outside-activity tracking for modern teams." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Pulse Safari — Break & Activity Tracking" },
-      { name: "twitter:description", content: "Realtime break and outside-activity tracking for modern HR teams." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/211c6570-83b3-44a2-b408-84d8bfa1dfab/id-preview-cc582c5f--e3385a8f-325b-48ff-beb8-006d331f2aa2.lovable.app-1778735335230.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/211c6570-83b3-44a2-b408-84d8bfa1dfab/id-preview-cc582c5f--e3385a8f-325b-48ff-beb8-006d331f2aa2.lovable.app-1778735335230.png" },
+      { name: "twitter:description", content: "Realtime break and outside-activity tracking for modern teams." },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/211c6570-83b3-44a2-b408-84d8bfa1dfab/id-preview-cc582c5f--e3385a8f-325b-48ff-beb8-006d331f2aa2.lovable.app-1778735335230.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/211c6570-83b3-44a2-b408-84d8bfa1dfab/id-preview-cc582c5f--e3385a8f-325b-48ff-beb8-006d331f2aa2.lovable.app-1778735335230.png",
+      },
     ],
     links: [
       {
