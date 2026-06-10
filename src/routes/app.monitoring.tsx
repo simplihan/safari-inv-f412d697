@@ -86,7 +86,7 @@ function Monitoring() {
     }
     setBusy(startTarget.id);
     try {
-      await startFn({ data: { user_id: startTarget.id, reason: startReason, remarks: startRemarks.trim() || null } });
+      await startFn({ data: { user_id: startTarget.id, reason: toDbReason(startReason), remarks: startRemarks.trim() || null } });
       toast.success(`Started ${startReason} for ${startTarget.full_name}`);
       setStartTarget(null);
       await load();
@@ -119,7 +119,7 @@ function Monitoring() {
       await updateFn({
         data: {
           activity_id: editTarget.id,
-          reason: editReason as any,
+          reason: toDbReason(editReason),
           remarks: editRemarks.trim() || null,
           out_time: new Date(editOut).toISOString(),
           in_time: editIn ? new Date(editIn).toISOString() : null,

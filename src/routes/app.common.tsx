@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { fmtTime, fmtDuration, liveDuration } from "@/lib/format";
+import { fmtTime, fmtDuration, liveDuration, reasonLabel } from "@/lib/format";
 import { PieChart as PieIcon, Trophy, Clock } from "lucide-react";
 import { useAdminIds } from "@/hooks/use-admin-ids";
 import { useVisibleIds } from "@/hooks/use-visible-ids";
@@ -320,7 +320,7 @@ function Common() {
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium truncate">{r.profile?.full_name ?? "Unknown"}</p>
-                      <Badge variant="secondary">{r.reason}</Badge>
+                      <Badge variant="secondary">{reasonLabel(r.reason)}</Badge>
                       {r.status === "out" && <Badge className="bg-warning/20 text-foreground border-warning/40 animate-pulse">Live</Badge>}
                       {r.profile?.department && <span className="text-xs text-muted-foreground">· {r.profile.department}</span>}
                     </div>

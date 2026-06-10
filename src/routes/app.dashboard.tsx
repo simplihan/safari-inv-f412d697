@@ -99,7 +99,7 @@ function Dashboard() {
     setSubmitting(true);
     const { error } = await supabase.from("break_logs").insert({
       user_id: user.id,
-      reason: reason as any,
+      reason: toDbReason(reason),
       remarks: remarks.trim() || null,
       out_time: new Date().toISOString(),
       status: "out",
@@ -156,7 +156,7 @@ function Dashboard() {
               <div className="flex flex-col md:flex-row md:items-center gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <Badge className="gradient-primary text-primary-foreground border-0">{active.reason}</Badge>
+                    <Badge className="gradient-primary text-primary-foreground border-0">{reasonLabel(active.reason)}</Badge>
                     <span className="text-sm text-muted-foreground">since {fmtTime(active.out_time)}</span>
                   </div>
                   {active.remarks && <p className="mt-2 text-sm text-muted-foreground">"{active.remarks}"</p>}
@@ -242,7 +242,7 @@ function Dashboard() {
                 <li key={b.id} className="py-3 flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{b.reason}</Badge>
+                      <Badge variant="secondary">{reasonLabel(b.reason)}</Badge>
                       {b.status === "out" && (
                         <Badge className="bg-warning/20 text-foreground border-warning/40">Live</Badge>
                       )}
