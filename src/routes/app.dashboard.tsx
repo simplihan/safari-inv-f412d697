@@ -99,7 +99,7 @@ function Dashboard() {
     setSubmitting(true);
     const { error } = await supabase.from("break_logs").insert({
       user_id: user.id,
-      reason: toDbReason(reason),
+      reason: toDbReason(reason) as any,
       remarks: remarks.trim() || null,
       out_time: new Date().toISOString(),
       status: "out",
