@@ -28,9 +28,9 @@ export function useVisibleIds() {
         setReady(true);
         return;
       }
-      const { data } = await supabase.rpc("list_visible_user_ids");
+      const { data } = await (supabase.rpc as unknown as (fn: string) => Promise<{ data: { user_id: string }[] | null }>)("list_visible_user_ids");
       if (cancelled) return;
-      const visible = new Set<string>(((data ?? []) as { user_id: string }[]).map((r) => r.user_id));
+      const visible = new Set<string>((data ?? []).map((r) => r.user_id));
       visible.add(user.id);
       setIds(visible);
       setReady(true);
