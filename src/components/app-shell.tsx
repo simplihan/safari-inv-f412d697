@@ -30,7 +30,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { NotificationsProvider } from "@/hooks/use-notifications";
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { profile, roles, signOut, canManage, isStaff, isAdmin, user } = useAuth();
+  const { profile, roles, signOut, canManage, isStaff, isAdmin, isManager, user } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
