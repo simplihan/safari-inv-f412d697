@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, BellRing, X } from "lucide-react";
+import { Bell, BellRing } from "lucide-react";
 import { useNotifications, AppNotification, NotificationPriority } from "@/hooks/use-notifications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -129,6 +129,3 @@ export function NotificationsBell() {
     </>
   );
 }
-
-// Suppress unused import warning for X (kept for future close-button use)
-void X;
