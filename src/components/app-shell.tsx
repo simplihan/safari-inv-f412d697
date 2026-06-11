@@ -30,7 +30,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { NotificationsProvider } from "@/hooks/use-notifications";
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { profile, roles, signOut, canManage, isStaff, isAdmin, user } = useAuth();
+  const { profile, roles, signOut, canManage, isStaff, isAdmin, isManager, user } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/app/staff", label: "Staff Management", icon: Users, show: canManage },
     { to: "/app/reports", label: "Reports", icon: FileBarChart, show: canManage },
     { to: "/app/monthly", label: "Monthly Reports", icon: CalendarRange, show: canManage },
-    { to: "/app/notifications", label: "Notifications", icon: Megaphone, show: canManage },
+    { to: "/app/notifications", label: "Notifications", icon: Megaphone, show: isAdmin || isManager },
     { to: "/app/audit", label: "Audit Log", icon: ShieldCheck, show: isAdmin },
     { to: "/app/profile", label: "Profile", icon: Settings, show: true },
   ].filter((i) => i.show);
