@@ -16,6 +16,7 @@ import {
   Building2,
   ShieldCheck,
   CalendarRange,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
