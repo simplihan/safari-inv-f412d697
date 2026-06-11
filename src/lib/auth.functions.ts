@@ -19,6 +19,9 @@ export const signInWithSgcId = createServerFn({ method: "POST" })
     const admin = createClient(url, serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+    const fail = (message: string) =>
+      ({ ok: false as const, message });
+
     const { data: prof } = await admin
       .from("profiles")
       .select("email, status")
@@ -26,7 +29,7 @@ export const signInWithSgcId = createServerFn({ method: "POST" })
       .maybeSingle();
     // Always return a generic error to avoid SGC enumeration.
     const genericMsg = "Invalid SGC ID or password.";
-    if (!prof?.email) throw new Error(genericMsg);
+    if (!prof?.email) return fail(genericMsg);
 
     const auth = createClient(url, anonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -35,16 +38,17 @@ export const signInWithSgcId = createServerFn({ method: "POST" })
       email: prof.email,
       password: data.password,
     });
-    if (error || !signed.session) throw new Error(genericMsg);
+    if (error || !signed.session) return fail(genericMsg);
 
     if (prof.status === "rejected") {
-      throw new Error("Your access request was rejected.");
+      return fail("Your access request was rejected.");
     }
     if (prof.status === "pending") {
-      throw new Error("Your account is awaiting approval.");
+      return fail("Your account is awaiting approval.");
     }
 
     return {
+      ok: true as const,
       access_token: signed.session.access_token,
       refresh_token: signed.session.refresh_token,
     };

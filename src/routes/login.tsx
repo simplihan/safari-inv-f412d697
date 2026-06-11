@@ -24,15 +24,23 @@ function Login() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    let tokens: { access_token: string; refresh_token: string };
+    let result;
     try {
-      tokens = await signIn({ data: { sgc_id: identifier.trim(), password } });
+      result = await signIn({ data: { sgc_id: identifier.trim(), password } });
     } catch (err: any) {
       toast.error(friendlyError({ message: err?.message ?? "Sign-in failed" }));
       setLoading(false);
       return;
     }
-    const { error: setErr } = await supabase.auth.setSession(tokens);
+    if (!result.ok) {
+      toast.error(friendlyError({ message: result.message }));
+      setLoading(false);
+      return;
+    }
+    const { error: setErr } = await supabase.auth.setSession({
+      access_token: result.access_token,
+      refresh_token: result.refresh_token,
+    });
     if (setErr) {
       toast.error(friendlyError(setErr));
       setLoading(false);
