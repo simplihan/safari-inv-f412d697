@@ -26,6 +26,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationsBell } from "@/components/notifications-bell";
+import { NotificationsProvider } from "@/hooks/use-notifications";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { profile, roles, signOut, canManage, isStaff, isAdmin, user } = useAuth();
@@ -88,6 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/app/staff", label: "Staff Management", icon: Users, show: canManage },
     { to: "/app/reports", label: "Reports", icon: FileBarChart, show: canManage },
     { to: "/app/monthly", label: "Monthly Reports", icon: CalendarRange, show: canManage },
+    { to: "/app/notifications", label: "Notifications", icon: Megaphone, show: canManage },
     { to: "/app/audit", label: "Audit Log", icon: ShieldCheck, show: isAdmin },
     { to: "/app/profile", label: "Profile", icon: Settings, show: true },
   ].filter((i) => i.show);
@@ -161,6 +164,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 
   return (
+    <NotificationsProvider>
     <div className="flex min-h-screen w-full">
       <div className="hidden md:block">{Sidebar}</div>
       <AnimatePresence>
@@ -182,14 +186,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </AnimatePresence>
       <main className="flex-1 min-w-0">
-        <header className="sticky top-0 z-30 glass border-b border-border md:hidden flex items-center px-4 h-14">
-          <Button variant="ghost" size="icon" onClick={() => setOpen(true)}>
+        <header className="sticky top-0 z-30 glass border-b border-border flex items-center px-4 h-14">
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
-          <span className="ml-2 font-semibold">Pulse Safari</span>
+          <span className="ml-2 font-semibold md:hidden">Pulse Safari</span>
+          <div className="ml-auto flex items-center gap-1">
+            <NotificationsBell />
+          </div>
         </header>
         <div className="p-6 md:p-10 max-w-7xl mx-auto">{children}</div>
       </main>
     </div>
+    </NotificationsProvider>
   );
 }
