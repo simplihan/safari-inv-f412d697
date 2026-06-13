@@ -15,7 +15,7 @@ import { Search, Pencil, UserPlus, KeyRound, Power } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { adminCreateUser, adminResetPassword, adminSetRoles, adminSetActive } from "@/lib/users.functions";
+import { adminCreateUser, adminResetPassword, adminSetRoles, adminSetActive, adminUpdateEmail, adminSetDepartments } from "@/lib/users.functions";
 import { useDepartments } from "@/hooks/use-departments";
 
 export const Route = createFileRoute("/app/staff")({ component: Staff });
@@ -120,18 +120,23 @@ function Staff() {
           </Card>
         ))}
       </div>
-      <EditDialog user={editing} onClose={() => setEditing(null)} onSaved={load} isAdmin={isAdmin} />
+      <EditDialog user={editing} onClose={() => setEditing(null)} onSaved={load} isAdmin={isAdmin} canEditEmail={isAdmin || isManager} />
       {creating && <CreateDialog onClose={() => setCreating(false)} onCreated={load} />}
     </div>
   );
 }
 
-function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
+function EditDialog({ user, onClose, onSaved, isAdmin, canEditEmail }: any) {
   const [form, setForm] = useState<any>(null);
   const [roles, setRoles] = useState<string[]>(["staff"]);
   const [newPwd, setNewPwd] = useState("");
+  const [extraDepts, setExtraDepts] = useState<string[]>([]);
+  const [origEmail, setOrigEmail] = useState<string>("");
+  const [origDepts, setOrigDepts] = useState<string[]>([]);
   const resetPwd = useServerFn(adminResetPassword);
   const setRolesFn = useServerFn(adminSetRoles);
+  const updateEmailFn = useServerFn(adminUpdateEmail);
+  const setDeptsFn = useServerFn(adminSetDepartments);
   const { names: deptNames } = useDepartments();
   useEffect(() => {
     if (user) {
@@ -145,16 +150,40 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
       });
       setRoles(user.roles?.length ? user.roles : ["staff"]);
       setNewPwd("");
+      setOrigEmail(user.email ?? "");
+      // Load multi-department assignments
+      supabase
+        .from("user_departments")
+        .select("department")
+        .eq("user_id", user.id)
+        .then(({ data }) => {
+          const list = (data ?? []).map((r: any) => r.department);
+          // Make sure primary department is included
+          if (user.department && !list.includes(user.department)) list.push(user.department);
+          setExtraDepts(list);
+          setOrigDepts([...list].sort());
+        });
     }
   }, [user]);
   if (!user || !form) return null;
   const toggleRole = (r: string) => {
     setRoles((prev) => prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]);
   };
+  const toggleDept = (d: string) => {
+    setExtraDepts((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]);
+  };
   const save = async () => {
-    const { email: _ignore, ...patch } = form;
+    const { email: newEmail, ...patch } = form;
     const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
     if (error) return toast.error(friendlyError(error));
+    // Email change (admin or manager)
+    if (canEditEmail && newEmail && newEmail !== origEmail) {
+      try {
+        await updateEmailFn({ data: { user_id: user.id, email: newEmail } });
+      } catch (e: any) {
+        return toast.error(friendlyError(e));
+      }
+    }
     if (isAdmin) {
       const sorted = [...roles].sort().join(",");
       const current = [...(user.roles ?? [])].sort().join(",");
@@ -162,6 +191,17 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
         if (roles.length === 0) return toast.error("Assign at least one role");
         try {
           await setRolesFn({ data: { user_id: user.id, roles: roles as any } });
+        } catch (e: any) {
+          return toast.error(friendlyError(e));
+        }
+      }
+      // Department assignments
+      const deptSorted = [...extraDepts].sort().join(",");
+      const deptOrig = origDepts.join(",");
+      if (deptSorted !== deptOrig) {
+        if (extraDepts.length === 0) return toast.error("Assign at least one department");
+        try {
+          await setDeptsFn({ data: { user_id: user.id, departments: extraDepts } });
         } catch (e: any) {
           return toast.error(friendlyError(e));
         }
@@ -185,7 +225,15 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
         <DialogHeader><DialogTitle>Edit {user.full_name}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2"><Label>Full name</Label><Input value={form.full_name ?? ""} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
-          <div className="col-span-2"><Label>Email</Label><Input value={form.email ?? ""} disabled /></div>
+          <div className="col-span-2">
+            <Label>Email {canEditEmail ? "" : "(read-only)"}</Label>
+            <Input
+              type="email"
+              value={form.email ?? ""}
+              disabled={!canEditEmail}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </div>
           <div><Label>SGC ID</Label><Input value={form.sgc_id ?? ""} onChange={(e) => setForm({ ...form, sgc_id: e.target.value })} /></div>
           <div>
             <Label>Department</Label>
@@ -219,6 +267,20 @@ function EditDialog({ user, onClose, onSaved, isAdmin }: any) {
                   </label>
                 ))}
               </div>
+            </div>
+          )}
+          {isAdmin && (
+            <div className="col-span-2">
+              <Label>Departments (multi-select)</Label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {deptNames.map((d) => (
+                  <label key={d} className="flex items-center gap-2 rounded-md border border-border px-3 py-2 cursor-pointer hover:bg-muted/40">
+                    <Checkbox checked={extraDepts.includes(d)} onCheckedChange={() => toggleDept(d)} />
+                    <span className="text-sm">{d}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">The first selected department is used as the primary.</p>
             </div>
           )}
           {isAdmin && (
