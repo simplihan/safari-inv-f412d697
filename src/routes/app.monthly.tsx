@@ -24,6 +24,15 @@ function daysInMonth(ym: string) {
   return new Date(Date.UTC(y, m, 0)).getUTCDate();
 }
 
+function elapsedDays(ym: string) {
+  const [y, m] = ym.split("-").map(Number);
+  const now = new Date();
+  if (y === now.getUTCFullYear() && m === now.getUTCMonth() + 1) {
+    return now.getUTCDate();
+  }
+  return daysInMonth(ym);
+}
+
 function categorize(mins: number, days: number): "Low" | "Medium" | "High" {
   const avgPerDay = days > 0 ? mins / days : 0;
   if (avgPerDay <= LOW_MAX) return "Low";
@@ -53,7 +62,7 @@ function thisMonthYM() {
 
 function MonthlyReports() {
   const { canManage, isAdmin, profile } = useAuth();
-  const [ym, setYm] = useState(lastMonthYM());
+  const [ym, setYm] = useState(thisMonthYM());
   const [dept, setDept] = useState<string>("__all");
   const [departments, setDepartments] = useState<string[]>([]);
   const [rows, setRows] = useState<any[]>([]);
@@ -104,7 +113,7 @@ function MonthlyReports() {
   }, [canManage]);
 
   const aggregated = useMemo(() => {
-    const days = daysInMonth(ym);
+    const days = elapsedDays(ym);
     const byUser: Record<string, { id: string; mins: number; sessions: number }> = {};
     for (const r of rows) {
       const p = profiles[r.user_id];
