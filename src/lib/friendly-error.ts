@@ -5,7 +5,7 @@ export function friendlyError(error: unknown): string {
   const msg = (e.message ?? "").toLowerCase();
 
   if (msg.includes("staff members are already out")) {
-    return "Five staff members are already out. Please wait for them to return before stepping out.";
+    return "8 staff members are already out. Please wait for them to return before stepping out.";
   }
   if (msg.includes("uniq_break_logs_one_open_per_user")) {
     return "Please stop your current activity before starting a new one.";

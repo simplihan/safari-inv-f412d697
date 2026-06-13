@@ -44,7 +44,7 @@ export const adminStartActivity = createServerFn({ method: "POST" })
     });
     if (error) {
       if (error.message?.includes("staff members are already out")) {
-        throw new Error("Five staff members are already out. Please wait for them to return before stepping out.");
+        throw new Error("8 staff members are already out. Please wait for them to return before stepping out.");
       }
       throw new Error(error.message);
     }
