@@ -81,6 +81,61 @@ async function requireAdmin(supabase: any, userId: string) {
   if (!data) throw new Error("Forbidden: admin role required");
 }
 
+async function requireAdminOrManager(supabase: any, userId: string) {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .in("role", ["admin", "manager"]);
+  if (!data || data.length === 0) throw new Error("Forbidden: admin or manager role required");
+}
+
+export const adminUpdateEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({
+      user_id: z.string().uuid(),
+      email: z.string().trim().email().max(255),
+    }).parse(data)
+  )
+  .handler(async ({ data, context }) => {
+    await requireAdminOrManager(context.supabase, context.userId);
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
+      email: data.email,
+      email_confirm: true,
+    });
+    if (error) throw new Error(error.message);
+    const { error: profErr } = await supabaseAdmin
+      .from("profiles")
+      .update({ email: data.email })
+      .eq("id", data.user_id);
+    if (profErr) throw new Error(profErr.message);
+    return { ok: true };
+  });
+
+export const adminSetDepartments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({
+      user_id: z.string().uuid(),
+      departments: z.array(z.string().min(1).max(120)).min(1).max(20),
+    }).parse(data)
+  )
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const unique = Array.from(new Set(data.departments));
+    await supabaseAdmin.from("user_departments").delete().eq("user_id", data.user_id);
+    const rows = unique.map((department) => ({ user_id: data.user_id, department }));
+    const { error } = await supabaseAdmin.from("user_departments").insert(rows);
+    if (error) throw new Error(error.message);
+    // Keep primary department in profiles in sync with the first selection
+    await supabaseAdmin
+      .from("profiles")
+      .update({ department: unique[0] })
+      .eq("id", data.user_id);
+    return { ok: true };
+  });
+
 export const adminSetRoles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
