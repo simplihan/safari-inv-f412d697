@@ -17,7 +17,7 @@ export const Route = createFileRoute("/app/monthly")({ component: MonthlyReports
 // Categorization thresholds (average break minutes per day in the month)
 // Low = ideal (<= 90 min/day), Medium = watch, High = needs attention.
 const LOW_MAX = 60;   // <= 60 min / day
-const MED_MAX = 91;  // <= 91 min / day
+const MED_MAX = 90;  // <= 90 min / day
 
 function daysInMonth(ym: string) {
   const [y, m] = ym.split("-").map(Number);
@@ -219,7 +219,7 @@ function MonthlyReports() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Monthly Reports</h1>
           <p className="text-muted-foreground mt-1">
-            Activity categorised by average break time per day. Low = ideal (≤ 60 min/day), Medium = 61–91, High = needs attention.
+            Activity categorised by average break time per day. Low = ideal (≤ 60 min/day), Medium = 61–90, High &gt; 91 min/day.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-end">
