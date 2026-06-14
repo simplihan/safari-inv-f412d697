@@ -8,13 +8,32 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Search, MessageCircle, Check, CheckCheck, BellOff, Bell } from "lucide-react";
+import { Send, Search, MessageCircle, Check, CheckCheck, BellOff, Bell, Smile, MoreVertical, Forward, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/chat")({ component: Chat });
 
-type Person = { id: string; full_name: string; department: string | null; profile_image: string | null };
+type Person = { id: string; full_name: string; department: string | null; profile_image: string | null; last_seen_at: string | null };
 type Msg = {
   id: string;
   sender_id: string;
@@ -44,20 +63,41 @@ function dayLabel(iso: string) {
   return d.toLocaleDateString(undefined, { day: "2-digit", month: "long", year: "numeric" });
 }
 
+function presenceLabel(iso: string | null, onlineIds: Set<string>, id: string): { online: boolean; text: string } {
+  if (onlineIds.has(id)) return { online: true, text: "Online" };
+  if (!iso) return { online: false, text: "Offline" };
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  if (diffMs < 60_000) return { online: true, text: "Online" };
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) return { online: false, text: `Last seen today at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` };
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  if (d.toDateString() === yest.toDateString()) return { online: false, text: `Last seen yesterday at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` };
+  return { online: false, text: `Last seen ${d.toLocaleDateString([], { month: "short", day: "numeric" })} at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` };
+}
+
 function Chat() {
   const { user, profile, canManage } = useAuth();
   const [people, setPeople] = useState<Person[]>([]);
   const [active, setActive] = useState<Person | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState("");
   const [q, setQ] = useState("");
   const [unread, setUnread] = useState<Record<string, number>>({});
   const [lastMsg, setLastMsg] = useState<Record<string, Msg>>({});
   const [myDeptChatOn, setMyDeptChatOn] = useState(true);
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
+  const [forwardMsg, setForwardMsg] = useState<Msg | null>(null);
+  const [forwardPicks, setForwardPicks] = useState<Set<string>>(new Set());
+  const [forwardQ, setForwardQ] = useState("");
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "default"
   );
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const activeIdRef = useRef<string | null>(null);
   useEffect(() => { activeIdRef.current = active?.id ?? null; }, [active?.id]);
 
@@ -120,6 +160,57 @@ function Chat() {
           .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? "")),
       );
     })();
+  }, [user?.id]);
+
+  // Heartbeat: update my last_seen_at every 30s + on focus
+  useEffect(() => {
+    if (!user) return;
+    const ping = () => { supabase.rpc("touch_last_seen"); };
+    ping();
+    const iv = setInterval(ping, 30_000);
+    const onFocus = () => ping();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [user?.id]);
+
+  // Presence channel
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase.channel("chat-presence", { config: { presence: { key: user.id } } });
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState() as Record<string, unknown[]>;
+      setOnlineIds(new Set(Object.keys(state)));
+    }).subscribe(async (status) => {
+      if (status === "SUBSCRIBED") await ch.track({ at: new Date().toISOString() });
+    });
+    return () => { supabase.removeChannel(ch); };
+  }, [user?.id]);
+
+  // Refresh peers' last_seen periodically
+  useEffect(() => {
+    if (!user) return;
+    const refresh = async () => {
+      const { data } = await supabase.rpc("list_directory");
+      const map = new Map<string, string | null>(
+        ((data ?? []) as any[]).map((p) => [p.id, p.last_seen_at])
+      );
+      setPeople((prev) => prev.map((p) => ({ ...p, last_seen_at: map.get(p.id) ?? p.last_seen_at })));
+    };
+    const iv = setInterval(refresh, 45_000);
+    return () => clearInterval(iv);
+  }, [user?.id]);
+
+  // Load my hidden messages
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("message_hidden").select("message_id").eq("user_id", user.id).then(({ data }) => {
+      setHiddenIds(new Set((data ?? []).map((r: any) => r.message_id)));
+    });
   }, [user?.id]);
 
   // load unread counts + last message per peer
@@ -191,6 +282,15 @@ function Chat() {
         setLastMsg((prev) => (prev[peer]?.id === m.id ? { ...prev, [peer]: m } : prev));
         setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
       })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" }, (payload) => {
+        const old = payload.old as { id: string };
+        setMessages((prev) => prev.filter((x) => x.id !== old.id));
+        setLastMsg((prev) => {
+          const next: Record<string, Msg> = {};
+          for (const k of Object.keys(prev)) if (prev[k].id !== old.id) next[k] = prev[k];
+          return next;
+        });
+      })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user?.id, active?.id, people]);
@@ -205,6 +305,36 @@ function Chat() {
       sender_id: user.id, recipient_id: active.id, content: text,
     });
     if (error) setDraft(text);
+    inputRef.current?.focus();
+  };
+
+  const deleteForMe = async (m: Msg) => {
+    if (!user) return;
+    setHiddenIds((s) => new Set(s).add(m.id));
+    const { error } = await supabase.from("message_hidden").insert({ message_id: m.id, user_id: user.id });
+    if (error) toast.error("Couldn't delete message");
+  };
+
+  const deleteForEveryone = async (m: Msg) => {
+    if (!user || m.sender_id !== user.id) return;
+    const { error } = await supabase.from("messages").delete().eq("id", m.id);
+    if (error) toast.error("Couldn't delete for everyone");
+    else setMessages((prev) => prev.filter((x) => x.id !== m.id));
+  };
+
+  const submitForward = async () => {
+    if (!forwardMsg || !user || forwardPicks.size === 0) return;
+    const rows = Array.from(forwardPicks).map((rid) => ({
+      sender_id: user.id,
+      recipient_id: rid,
+      content: forwardMsg.content,
+    }));
+    const { error } = await supabase.from("messages").insert(rows);
+    if (error) toast.error("Couldn't forward message");
+    else toast.success(`Forwarded to ${rows.length} ${rows.length === 1 ? "person" : "people"}`);
+    setForwardMsg(null);
+    setForwardPicks(new Set());
+    setForwardQ("");
   };
 
   // Sort: people with conversations first (by last msg time), then the rest alphabetically.
@@ -222,6 +352,19 @@ function Chat() {
   const sameDept = (p: Person) =>
     !!profile?.department && p.department === profile.department;
   const canMessage = active ? (sameDept(active) && (canManage || myDeptChatOn)) : false;
+
+  const visibleMessages = useMemo(
+    () => messages.filter((m) => !hiddenIds.has(m.id)),
+    [messages, hiddenIds]
+  );
+
+  const forwardCandidates = useMemo(
+    () => people.filter((p) =>
+      (canManage || sameDept(p)) &&
+      p.full_name.toLowerCase().includes(forwardQ.toLowerCase())
+    ),
+    [people, forwardQ, canManage, profile?.department]
+  );
 
   if (!canManage && !myDeptChatOn) {
     return (
