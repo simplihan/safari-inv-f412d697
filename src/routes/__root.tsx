@@ -72,7 +72,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "description",
         content: "Real-time workforce break and external activity monitoring for modern Department.",
       },
-      { property: "og:title", content: "Pulse Safari — Break & Activity Tracking" },
+      { property: "og:title", content: "Pulse Safari - Break & Activity Tracking" },
       { property: "og:description", content: "Realtime break and outside-activity tracking for modern teams." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
