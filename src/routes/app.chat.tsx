@@ -8,7 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Search, MessageCircle, Check, CheckCheck, BellOff, Bell, Smile, MoreVertical, Forward, Trash2 } from "lucide-react";
+import {
+  Send,
+  Search,
+  MessageCircle,
+  Check,
+  CheckCheck,
+  BellOff,
+  Bell,
+  Smile,
+  MoreVertical,
+  Forward,
+  Trash2,
+  Reply,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
@@ -42,6 +56,7 @@ type Msg = {
   created_at: string;
   read_at: string | null;
   delivered_at?: string | null;
+  reply_to_id?: string | null;
 };
 
 function formatWhen(iso: string) {
@@ -93,12 +108,14 @@ function Chat() {
   const [forwardPicks, setForwardPicks] = useState<Set<string>>(new Set());
   const [forwardQ, setForwardQ] = useState("");
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Msg | null>(null);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "default"
   );
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeIdRef = useRef<string | null>(null);
+  const msgRefs = useRef<Record<string, HTMLDivElement | null>>({});
   useEffect(() => { activeIdRef.current = active?.id ?? null; }, [active?.id]);
 
   // dept chat on/off
@@ -302,9 +319,13 @@ function Chat() {
     if (!text || !active || !user) return;
     setDraft("");
     const { error } = await supabase.from("messages").insert({
-      sender_id: user.id, recipient_id: active.id, content: text,
+      sender_id: user.id,
+      recipient_id: active.id,
+      content: text,
+      reply_to_id: replyingTo?.id ?? null,
     });
     if (error) setDraft(text);
+    setReplyingTo(null);
     inputRef.current?.focus();
   };
 
@@ -516,8 +537,9 @@ function Chat() {
                     const mine = m.sender_id === user?.id;
                     const prev = visibleMessages[i - 1];
                     const showDate = !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
+                    const replyTo = m.reply_to_id ? visibleMessages.find((x) => x.id === m.reply_to_id) : undefined;
                     return (
-                      <div key={m.id}>
+                      <div key={m.id} ref={(el) => { msgRefs.current[m.id] = el; }}>
                         {showDate && (
                           <div className="flex justify-center my-3">
                             <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 rounded-full px-3 py-1">
@@ -525,45 +547,67 @@ function Chat() {
                             </span>
                           </div>
                         )}
-                      <motion.div
-                        initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                        className={cn("group flex items-center gap-1", mine ? "justify-end" : "justify-start")}
-                      >
-                        {mine && (
-                          <MessageMenu
-                            mine={mine}
-                            onForward={() => setForwardMsg(m)}
-                            onDeleteForMe={() => deleteForMe(m)}
-                            onDeleteForEveryone={() => deleteForEveryone(m)}
-                          />
-                        )}
-                        <div className={cn(
-                          "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
-                          mine ? "gradient-primary text-primary-foreground rounded-br-sm" : "bg-accent/60 rounded-bl-sm"
-                        )}>
-                          <p className="whitespace-pre-wrap break-words">{m.content}</p>
-                          <p className={cn(
-                            "text-[10px] mt-1 opacity-70 flex items-center gap-1",
-                            mine ? "justify-end" : ""
+                        <motion.div
+                          initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                          className={cn("group flex items-center gap-1", mine ? "justify-end" : "justify-start")}
+                        >
+                          {mine && (
+                            <MessageMenu
+                              mine={mine}
+                              onForward={() => setForwardMsg(m)}
+                              onDeleteForMe={() => deleteForMe(m)}
+                              onDeleteForEveryone={() => deleteForEveryone(m)}
+                              onReply={() => setReplyingTo(m)}
+                            />
+                          )}
+                          <div className={cn(
+                            "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
+                            mine ? "gradient-primary text-primary-foreground rounded-br-sm" : "bg-accent/60 rounded-bl-sm"
                           )}>
-                            <span>{new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                            {mine && (m.read_at
-                              ? <CheckCheck className="h-3 w-3" />
-                              : m.delivered_at
-                                ? <CheckCheck className="h-3 w-3 opacity-60" />
-                                : <Check className="h-3 w-3 opacity-60" />
+                            {replyTo && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const el = msgRefs.current[replyTo.id];
+                                  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                }}
+                                className={cn(
+                                  "w-full text-left mb-1.5 rounded-lg px-2.5 py-1.5 text-xs border-l-2",
+                                  mine
+                                    ? "bg-white/10 border-white/40 text-white/90"
+                                    : "bg-primary/5 border-primary/30 text-muted-foreground"
+                                )}
+                              >
+                                <p className="font-medium truncate">
+                                  {replyTo.sender_id === user?.id ? "You" : active?.full_name}
+                                </p>
+                                <p className="truncate opacity-80">{replyTo.content}</p>
+                              </button>
                             )}
-                          </p>
-                        </div>
-                        {!mine && (
-                          <MessageMenu
-                            mine={mine}
-                            onForward={() => setForwardMsg(m)}
-                            onDeleteForMe={() => deleteForMe(m)}
-                            onDeleteForEveryone={() => deleteForEveryone(m)}
-                          />
-                        )}
-                      </motion.div>
+                            <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                            <p className={cn(
+                              "text-[10px] mt-1 opacity-70 flex items-center gap-1",
+                              mine ? "justify-end" : ""
+                            )}>
+                              <span>{new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                              {mine && (m.read_at
+                                ? <CheckCheck className="h-3 w-3" />
+                                : m.delivered_at
+                                  ? <CheckCheck className="h-3 w-3 opacity-60" />
+                                  : <Check className="h-3 w-3 opacity-60" />
+                              )}
+                            </p>
+                          </div>
+                          {!mine && (
+                            <MessageMenu
+                              mine={mine}
+                              onForward={() => setForwardMsg(m)}
+                              onDeleteForMe={() => deleteForMe(m)}
+                              onDeleteForEveryone={() => deleteForEveryone(m)}
+                              onReply={() => setReplyingTo(m)}
+                            />
+                          )}
+                        </motion.div>
                       </div>
                     );
                   })}
@@ -578,44 +622,65 @@ function Chat() {
               {canMessage ? (
                 <form
                   onSubmit={(e) => { e.preventDefault(); send(); }}
-                  className="border-t border-border p-3 flex items-center gap-2"
+                  className="border-t border-border"
                 >
-                  <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
-                    <PopoverTrigger asChild>
-                      <Button type="button" variant="ghost" size="icon" className="shrink-0">
-                        <Smile className="h-5 w-5" />
+                  {replyingTo && (
+                    <div className="px-3 pt-2 flex items-start gap-2 bg-muted/30">
+                      <div className="flex-1 min-w-0 border-l-2 border-primary/40 pl-2 py-1">
+                        <p className="text-[10px] font-medium text-muted-foreground">
+                          Replying to {replyingTo.sender_id === user?.id ? "yourself" : active?.full_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{replyingTo.content}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
+                        onClick={() => setReplyingTo(null)}
+                      >
+                        <X className="h-3.5 w-3.5" />
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent side="top" align="start" className="p-0 w-auto border-0 bg-transparent shadow-none">
-                      <EmojiPicker
-                        onEmojiClick={(e) => {
-                          setDraft((d) => d + e.emoji);
-                          inputRef.current?.focus();
-                        }}
-                        emojiStyle={EmojiStyle.NATIVE}
-                        theme={Theme.AUTO}
-                        width={320}
-                        height={380}
-                        searchDisabled={false}
-                        skinTonesDisabled
-                        previewConfig={{ showPreview: false }}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Input
-                    ref={inputRef}
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    placeholder="Type a message…"
-                    autoFocus
-                  />
-                  <Button
-                    type="submit"
-                    className="gradient-primary text-primary-foreground border-0"
-                    disabled={!draft.trim()}
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
+                    </div>
+                  )}
+                  <div className="p-3 flex items-center gap-2">
+                    <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon" className="shrink-0">
+                          <Smile className="h-5 w-5" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent side="top" align="start" className="p-0 w-auto border-0 bg-transparent shadow-none">
+                        <EmojiPicker
+                          onEmojiClick={(e) => {
+                            setDraft((d) => d + e.emoji);
+                            inputRef.current?.focus();
+                          }}
+                          emojiStyle={EmojiStyle.NATIVE}
+                          theme={Theme.AUTO}
+                          width={320}
+                          height={380}
+                          searchDisabled={false}
+                          skinTonesDisabled
+                          previewConfig={{ showPreview: false }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      ref={inputRef}
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      placeholder={replyingTo ? "Reply…" : "Type a message…"}
+                      autoFocus
+                    />
+                    <Button
+                      type="submit"
+                      className="gradient-primary text-primary-foreground border-0"
+                      disabled={!draft.trim()}
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </form>
               ) : (
                 <div className="border-t border-border p-3 text-center text-xs text-muted-foreground">
@@ -703,11 +768,13 @@ function MessageMenu({
   onForward,
   onDeleteForMe,
   onDeleteForEveryone,
+  onReply,
 }: {
   mine: boolean;
   onForward: () => void;
   onDeleteForMe: () => void;
   onDeleteForEveryone: () => void;
+  onReply: () => void;
 }) {
   return (
     <DropdownMenu>
@@ -721,6 +788,9 @@ function MessageMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={mine ? "end" : "start"}>
+        <DropdownMenuItem onClick={onReply}>
+          <Reply className="h-4 w-4 mr-2" /> Reply
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={onForward}>
           <Forward className="h-4 w-4 mr-2" /> Forward
         </DropdownMenuItem>
