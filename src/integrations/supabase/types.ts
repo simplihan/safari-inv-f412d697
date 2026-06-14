@@ -245,6 +245,32 @@ export type Database = {
         }
         Relationships: []
       }
+      message_hidden: {
+        Row: {
+          hidden_at: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          hidden_at?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          hidden_at?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_hidden_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -344,6 +370,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          last_seen_at: string | null
           mobile: string | null
           notif_enabled: boolean
           profile_image: string | null
@@ -357,6 +384,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          last_seen_at?: string | null
           mobile?: string | null
           notif_enabled?: boolean
           profile_image?: string | null
@@ -370,6 +398,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          last_seen_at?: string | null
           mobile?: string | null
           notif_enabled?: boolean
           profile_image?: string | null
@@ -470,6 +499,7 @@ export type Database = {
           department: string
           full_name: string
           id: string
+          last_seen_at: string
           profile_image: string
           status: Database["public"]["Enums"]["user_status"]
         }[]
@@ -497,6 +527,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      touch_last_seen: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "manager" | "staff" | "supervisor"
