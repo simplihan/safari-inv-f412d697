@@ -8,7 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Search, MessageCircle, Check, CheckCheck, BellOff, Bell, Smile, MoreVertical, Forward, Trash2 } from "lucide-react";
+import {
+  Send,
+  Search,
+  MessageCircle,
+  Check,
+  CheckCheck,
+  BellOff,
+  Bell,
+  Smile,
+  MoreVertical,
+  Forward,
+  Trash2,
+  Reply,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
@@ -42,6 +56,7 @@ type Msg = {
   created_at: string;
   read_at: string | null;
   delivered_at?: string | null;
+  reply_to_id?: string | null;
 };
 
 function formatWhen(iso: string) {
