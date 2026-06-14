@@ -622,44 +622,65 @@ function Chat() {
               {canMessage ? (
                 <form
                   onSubmit={(e) => { e.preventDefault(); send(); }}
-                  className="border-t border-border p-3 flex items-center gap-2"
+                  className="border-t border-border"
                 >
-                  <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
-                    <PopoverTrigger asChild>
-                      <Button type="button" variant="ghost" size="icon" className="shrink-0">
-                        <Smile className="h-5 w-5" />
+                  {replyingTo && (
+                    <div className="px-3 pt-2 flex items-start gap-2 bg-muted/30">
+                      <div className="flex-1 min-w-0 border-l-2 border-primary/40 pl-2 py-1">
+                        <p className="text-[10px] font-medium text-muted-foreground">
+                          Replying to {replyingTo.sender_id === user?.id ? "yourself" : active?.full_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{replyingTo.content}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
+                        onClick={() => setReplyingTo(null)}
+                      >
+                        <X className="h-3.5 w-3.5" />
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent side="top" align="start" className="p-0 w-auto border-0 bg-transparent shadow-none">
-                      <EmojiPicker
-                        onEmojiClick={(e) => {
-                          setDraft((d) => d + e.emoji);
-                          inputRef.current?.focus();
-                        }}
-                        emojiStyle={EmojiStyle.NATIVE}
-                        theme={Theme.AUTO}
-                        width={320}
-                        height={380}
-                        searchDisabled={false}
-                        skinTonesDisabled
-                        previewConfig={{ showPreview: false }}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Input
-                    ref={inputRef}
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    placeholder="Type a message…"
-                    autoFocus
-                  />
-                  <Button
-                    type="submit"
-                    className="gradient-primary text-primary-foreground border-0"
-                    disabled={!draft.trim()}
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
+                    </div>
+                  )}
+                  <div className="p-3 flex items-center gap-2">
+                    <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon" className="shrink-0">
+                          <Smile className="h-5 w-5" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent side="top" align="start" className="p-0 w-auto border-0 bg-transparent shadow-none">
+                        <EmojiPicker
+                          onEmojiClick={(e) => {
+                            setDraft((d) => d + e.emoji);
+                            inputRef.current?.focus();
+                          }}
+                          emojiStyle={EmojiStyle.NATIVE}
+                          theme={Theme.AUTO}
+                          width={320}
+                          height={380}
+                          searchDisabled={false}
+                          skinTonesDisabled
+                          previewConfig={{ showPreview: false }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      ref={inputRef}
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      placeholder={replyingTo ? "Reply…" : "Type a message…"}
+                      autoFocus
+                    />
+                    <Button
+                      type="submit"
+                      className="gradient-primary text-primary-foreground border-0"
+                      disabled={!draft.trim()}
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </form>
               ) : (
                 <div className="border-t border-border p-3 text-center text-xs text-muted-foreground">
@@ -747,11 +768,13 @@ function MessageMenu({
   onForward,
   onDeleteForMe,
   onDeleteForEveryone,
+  onReply,
 }: {
   mine: boolean;
   onForward: () => void;
   onDeleteForMe: () => void;
   onDeleteForEveryone: () => void;
+  onReply: () => void;
 }) {
   return (
     <DropdownMenu>
@@ -765,6 +788,9 @@ function MessageMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={mine ? "end" : "start"}>
+        <DropdownMenuItem onClick={onReply}>
+          <Reply className="h-4 w-4 mr-2" /> Reply
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={onForward}>
           <Forward className="h-4 w-4 mr-2" /> Forward
         </DropdownMenuItem>
