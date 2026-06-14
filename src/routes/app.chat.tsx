@@ -319,9 +319,13 @@ function Chat() {
     if (!text || !active || !user) return;
     setDraft("");
     const { error } = await supabase.from("messages").insert({
-      sender_id: user.id, recipient_id: active.id, content: text,
+      sender_id: user.id,
+      recipient_id: active.id,
+      content: text,
+      reply_to_id: replyingTo?.id ?? null,
     });
     if (error) setDraft(text);
+    setReplyingTo(null);
     inputRef.current?.focus();
   };
 
@@ -533,8 +537,9 @@ function Chat() {
                     const mine = m.sender_id === user?.id;
                     const prev = visibleMessages[i - 1];
                     const showDate = !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
+                    const replyTo = m.reply_to_id ? visibleMessages.find((x) => x.id === m.reply_to_id) : undefined;
                     return (
-                      <div key={m.id}>
+                      <div key={m.id} ref={(el) => { msgRefs.current[m.id] = el; }}>
                         {showDate && (
                           <div className="flex justify-center my-3">
                             <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 rounded-full px-3 py-1">
@@ -542,45 +547,67 @@ function Chat() {
                             </span>
                           </div>
                         )}
-                      <motion.div
-                        initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                        className={cn("group flex items-center gap-1", mine ? "justify-end" : "justify-start")}
-                      >
-                        {mine && (
-                          <MessageMenu
-                            mine={mine}
-                            onForward={() => setForwardMsg(m)}
-                            onDeleteForMe={() => deleteForMe(m)}
-                            onDeleteForEveryone={() => deleteForEveryone(m)}
-                          />
-                        )}
-                        <div className={cn(
-                          "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
-                          mine ? "gradient-primary text-primary-foreground rounded-br-sm" : "bg-accent/60 rounded-bl-sm"
-                        )}>
-                          <p className="whitespace-pre-wrap break-words">{m.content}</p>
-                          <p className={cn(
-                            "text-[10px] mt-1 opacity-70 flex items-center gap-1",
-                            mine ? "justify-end" : ""
+                        <motion.div
+                          initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                          className={cn("group flex items-center gap-1", mine ? "justify-end" : "justify-start")}
+                        >
+                          {mine && (
+                            <MessageMenu
+                              mine={mine}
+                              onForward={() => setForwardMsg(m)}
+                              onDeleteForMe={() => deleteForMe(m)}
+                              onDeleteForEveryone={() => deleteForEveryone(m)}
+                              onReply={() => setReplyingTo(m)}
+                            />
+                          )}
+                          <div className={cn(
+                            "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
+                            mine ? "gradient-primary text-primary-foreground rounded-br-sm" : "bg-accent/60 rounded-bl-sm"
                           )}>
-                            <span>{new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                            {mine && (m.read_at
-                              ? <CheckCheck className="h-3 w-3" />
-                              : m.delivered_at
-                                ? <CheckCheck className="h-3 w-3 opacity-60" />
-                                : <Check className="h-3 w-3 opacity-60" />
+                            {replyTo && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const el = msgRefs.current[replyTo.id];
+                                  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                }}
+                                className={cn(
+                                  "w-full text-left mb-1.5 rounded-lg px-2.5 py-1.5 text-xs border-l-2",
+                                  mine
+                                    ? "bg-white/10 border-white/40 text-white/90"
+                                    : "bg-primary/5 border-primary/30 text-muted-foreground"
+                                )}
+                              >
+                                <p className="font-medium truncate">
+                                  {replyTo.sender_id === user?.id ? "You" : active?.full_name}
+                                </p>
+                                <p className="truncate opacity-80">{replyTo.content}</p>
+                              </button>
                             )}
-                          </p>
-                        </div>
-                        {!mine && (
-                          <MessageMenu
-                            mine={mine}
-                            onForward={() => setForwardMsg(m)}
-                            onDeleteForMe={() => deleteForMe(m)}
-                            onDeleteForEveryone={() => deleteForEveryone(m)}
-                          />
-                        )}
-                      </motion.div>
+                            <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                            <p className={cn(
+                              "text-[10px] mt-1 opacity-70 flex items-center gap-1",
+                              mine ? "justify-end" : ""
+                            )}>
+                              <span>{new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                              {mine && (m.read_at
+                                ? <CheckCheck className="h-3 w-3" />
+                                : m.delivered_at
+                                  ? <CheckCheck className="h-3 w-3 opacity-60" />
+                                  : <Check className="h-3 w-3 opacity-60" />
+                              )}
+                            </p>
+                          </div>
+                          {!mine && (
+                            <MessageMenu
+                              mine={mine}
+                              onForward={() => setForwardMsg(m)}
+                              onDeleteForMe={() => deleteForMe(m)}
+                              onDeleteForEveryone={() => deleteForEveryone(m)}
+                              onReply={() => setReplyingTo(m)}
+                            />
+                          )}
+                        </motion.div>
                       </div>
                     );
                   })}
