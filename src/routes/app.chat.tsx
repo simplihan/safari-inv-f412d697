@@ -108,12 +108,14 @@ function Chat() {
   const [forwardPicks, setForwardPicks] = useState<Set<string>>(new Set());
   const [forwardQ, setForwardQ] = useState("");
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Msg | null>(null);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "default"
   );
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeIdRef = useRef<string | null>(null);
+  const msgRefs = useRef<Record<string, HTMLDivElement | null>>({});
   useEffect(() => { activeIdRef.current = active?.id ?? null; }, [active?.id]);
 
   // dept chat on/off
