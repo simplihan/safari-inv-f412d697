@@ -8,13 +8,32 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Search, MessageCircle, Check, CheckCheck, BellOff, Bell } from "lucide-react";
+import { Send, Search, MessageCircle, Check, CheckCheck, BellOff, Bell, Smile, MoreVertical, Forward, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/chat")({ component: Chat });
 
-type Person = { id: string; full_name: string; department: string | null; profile_image: string | null };
+type Person = { id: string; full_name: string; department: string | null; profile_image: string | null; last_seen_at: string | null };
 type Msg = {
   id: string;
   sender_id: string;
@@ -44,20 +63,41 @@ function dayLabel(iso: string) {
   return d.toLocaleDateString(undefined, { day: "2-digit", month: "long", year: "numeric" });
 }
 
+function presenceLabel(iso: string | null, onlineIds: Set<string>, id: string): { online: boolean; text: string } {
+  if (onlineIds.has(id)) return { online: true, text: "Online" };
+  if (!iso) return { online: false, text: "Offline" };
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  if (diffMs < 60_000) return { online: true, text: "Online" };
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) return { online: false, text: `Last seen today at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` };
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  if (d.toDateString() === yest.toDateString()) return { online: false, text: `Last seen yesterday at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` };
+  return { online: false, text: `Last seen ${d.toLocaleDateString([], { month: "short", day: "numeric" })} at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` };
+}
+
 function Chat() {
   const { user, profile, canManage } = useAuth();
   const [people, setPeople] = useState<Person[]>([]);
   const [active, setActive] = useState<Person | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState("");
   const [q, setQ] = useState("");
   const [unread, setUnread] = useState<Record<string, number>>({});
   const [lastMsg, setLastMsg] = useState<Record<string, Msg>>({});
   const [myDeptChatOn, setMyDeptChatOn] = useState(true);
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
+  const [forwardMsg, setForwardMsg] = useState<Msg | null>(null);
+  const [forwardPicks, setForwardPicks] = useState<Set<string>>(new Set());
+  const [forwardQ, setForwardQ] = useState("");
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "default"
   );
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const activeIdRef = useRef<string | null>(null);
   useEffect(() => { activeIdRef.current = active?.id ?? null; }, [active?.id]);
 
@@ -120,6 +160,57 @@ function Chat() {
           .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? "")),
       );
     })();
+  }, [user?.id]);
+
+  // Heartbeat: update my last_seen_at every 30s + on focus
+  useEffect(() => {
+    if (!user) return;
+    const ping = () => { supabase.rpc("touch_last_seen"); };
+    ping();
+    const iv = setInterval(ping, 30_000);
+    const onFocus = () => ping();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [user?.id]);
+
+  // Presence channel
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase.channel("chat-presence", { config: { presence: { key: user.id } } });
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState() as Record<string, unknown[]>;
+      setOnlineIds(new Set(Object.keys(state)));
+    }).subscribe(async (status) => {
+      if (status === "SUBSCRIBED") await ch.track({ at: new Date().toISOString() });
+    });
+    return () => { supabase.removeChannel(ch); };
+  }, [user?.id]);
+
+  // Refresh peers' last_seen periodically
+  useEffect(() => {
+    if (!user) return;
+    const refresh = async () => {
+      const { data } = await supabase.rpc("list_directory");
+      const map = new Map<string, string | null>(
+        ((data ?? []) as any[]).map((p) => [p.id, p.last_seen_at])
+      );
+      setPeople((prev) => prev.map((p) => ({ ...p, last_seen_at: map.get(p.id) ?? p.last_seen_at })));
+    };
+    const iv = setInterval(refresh, 45_000);
+    return () => clearInterval(iv);
+  }, [user?.id]);
+
+  // Load my hidden messages
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("message_hidden").select("message_id").eq("user_id", user.id).then(({ data }) => {
+      setHiddenIds(new Set((data ?? []).map((r: any) => r.message_id)));
+    });
   }, [user?.id]);
 
   // load unread counts + last message per peer
@@ -191,6 +282,15 @@ function Chat() {
         setLastMsg((prev) => (prev[peer]?.id === m.id ? { ...prev, [peer]: m } : prev));
         setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
       })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" }, (payload) => {
+        const old = payload.old as { id: string };
+        setMessages((prev) => prev.filter((x) => x.id !== old.id));
+        setLastMsg((prev) => {
+          const next: Record<string, Msg> = {};
+          for (const k of Object.keys(prev)) if (prev[k].id !== old.id) next[k] = prev[k];
+          return next;
+        });
+      })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user?.id, active?.id, people]);
@@ -205,6 +305,36 @@ function Chat() {
       sender_id: user.id, recipient_id: active.id, content: text,
     });
     if (error) setDraft(text);
+    inputRef.current?.focus();
+  };
+
+  const deleteForMe = async (m: Msg) => {
+    if (!user) return;
+    setHiddenIds((s) => new Set(s).add(m.id));
+    const { error } = await supabase.from("message_hidden").insert({ message_id: m.id, user_id: user.id });
+    if (error) toast.error("Couldn't delete message");
+  };
+
+  const deleteForEveryone = async (m: Msg) => {
+    if (!user || m.sender_id !== user.id) return;
+    const { error } = await supabase.from("messages").delete().eq("id", m.id);
+    if (error) toast.error("Couldn't delete for everyone");
+    else setMessages((prev) => prev.filter((x) => x.id !== m.id));
+  };
+
+  const submitForward = async () => {
+    if (!forwardMsg || !user || forwardPicks.size === 0) return;
+    const rows = Array.from(forwardPicks).map((rid) => ({
+      sender_id: user.id,
+      recipient_id: rid,
+      content: forwardMsg.content,
+    }));
+    const { error } = await supabase.from("messages").insert(rows);
+    if (error) toast.error("Couldn't forward message");
+    else toast.success(`Forwarded to ${rows.length} ${rows.length === 1 ? "person" : "people"}`);
+    setForwardMsg(null);
+    setForwardPicks(new Set());
+    setForwardQ("");
   };
 
   // Sort: people with conversations first (by last msg time), then the rest alphabetically.
@@ -222,6 +352,19 @@ function Chat() {
   const sameDept = (p: Person) =>
     !!profile?.department && p.department === profile.department;
   const canMessage = active ? (sameDept(active) && (canManage || myDeptChatOn)) : false;
+
+  const visibleMessages = useMemo(
+    () => messages.filter((m) => !hiddenIds.has(m.id)),
+    [messages, hiddenIds]
+  );
+
+  const forwardCandidates = useMemo(
+    () => people.filter((p) =>
+      (canManage || sameDept(p)) &&
+      p.full_name.toLowerCase().includes(forwardQ.toLowerCase())
+    ),
+    [people, forwardQ, canManage, profile?.department]
+  );
 
   if (!canManage && !myDeptChatOn) {
     return (
@@ -342,22 +485,36 @@ function Chat() {
           ) : (
             <>
               <header className="px-4 py-3 border-b border-border flex items-center gap-3 sticky top-0 z-10 bg-card/95 backdrop-blur">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={active.profile_image ?? undefined} />
-                  <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
-                    {active.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={active.profile_image ?? undefined} />
+                    <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
+                      {active.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  {presenceLabel(active.last_seen_at, onlineIds, active.id).online && (
+                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-card" />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium leading-tight">{active.full_name}</p>
-                  <p className="text-xs text-muted-foreground">{active.department ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(() => {
+                      const pl = presenceLabel(active.last_seen_at, onlineIds, active.id);
+                      return pl.online ? (
+                        <span className="text-emerald-600 font-medium">Online</span>
+                      ) : (
+                        <span>{pl.text}</span>
+                      );
+                    })()}
+                  </p>
                 </div>
               </header>
               <ScrollArea className="flex-1 px-4 py-4 bg-gradient-to-b from-transparent to-accent/10">
                 <div className="space-y-2">
-                  {messages.map((m, i) => {
+                  {visibleMessages.map((m, i) => {
                     const mine = m.sender_id === user?.id;
-                    const prev = messages[i - 1];
+                    const prev = visibleMessages[i - 1];
                     const showDate = !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
                     return (
                       <div key={m.id}>
@@ -370,8 +527,16 @@ function Chat() {
                         )}
                       <motion.div
                         initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                        className={cn("flex", mine ? "justify-end" : "justify-start")}
+                        className={cn("group flex items-center gap-1", mine ? "justify-end" : "justify-start")}
                       >
+                        {mine && (
+                          <MessageMenu
+                            mine={mine}
+                            onForward={() => setForwardMsg(m)}
+                            onDeleteForMe={() => deleteForMe(m)}
+                            onDeleteForEveryone={() => deleteForEveryone(m)}
+                          />
+                        )}
                         <div className={cn(
                           "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
                           mine ? "gradient-primary text-primary-foreground rounded-br-sm" : "bg-accent/60 rounded-bl-sm"
@@ -390,11 +555,19 @@ function Chat() {
                             )}
                           </p>
                         </div>
+                        {!mine && (
+                          <MessageMenu
+                            mine={mine}
+                            onForward={() => setForwardMsg(m)}
+                            onDeleteForMe={() => deleteForMe(m)}
+                            onDeleteForEveryone={() => deleteForEveryone(m)}
+                          />
+                        )}
                       </motion.div>
                       </div>
                     );
                   })}
-                  {messages.length === 0 && (
+                  {visibleMessages.length === 0 && (
                     <p className="text-center text-xs text-muted-foreground py-8">
                       No messages yet. Start the conversation.
                     </p>
@@ -407,7 +580,30 @@ function Chat() {
                   onSubmit={(e) => { e.preventDefault(); send(); }}
                   className="border-t border-border p-3 flex items-center gap-2"
                 >
+                  <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+                    <PopoverTrigger asChild>
+                      <Button type="button" variant="ghost" size="icon" className="shrink-0">
+                        <Smile className="h-5 w-5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent side="top" align="start" className="p-0 w-auto border-0 bg-transparent shadow-none">
+                      <EmojiPicker
+                        onEmojiClick={(e) => {
+                          setDraft((d) => d + e.emoji);
+                          inputRef.current?.focus();
+                        }}
+                        emojiStyle={EmojiStyle.NATIVE}
+                        theme={Theme.AUTO}
+                        width={320}
+                        height={380}
+                        searchDisabled={false}
+                        skinTonesDisabled
+                        previewConfig={{ showPreview: false }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <Input
+                    ref={inputRef}
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder="Type a message…"
@@ -430,6 +626,114 @@ function Chat() {
           )}
         </section>
       </Card>
+
+      {/* Forward dialog */}
+      <Dialog open={!!forwardMsg} onOpenChange={(o) => { if (!o) { setForwardMsg(null); setForwardPicks(new Set()); setForwardQ(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Forward message</DialogTitle>
+            <DialogDescription className="line-clamp-2">
+              "{forwardMsg?.content}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
+            <Input
+              placeholder="Search people"
+              className="pl-8"
+              value={forwardQ}
+              onChange={(e) => setForwardQ(e.target.value)}
+            />
+          </div>
+          <ScrollArea className="h-64 -mx-2">
+            <ul className="px-2 space-y-1">
+              {forwardCandidates.map((p) => {
+                const checked = forwardPicks.has(p.id);
+                return (
+                  <li key={p.id}>
+                    <label className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-accent/40 cursor-pointer">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                          setForwardPicks((prev) => {
+                            const next = new Set(prev);
+                            if (v) next.add(p.id); else next.delete(p.id);
+                            return next;
+                          });
+                        }}
+                      />
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={p.profile_image ?? undefined} />
+                        <AvatarFallback className="gradient-primary text-primary-foreground text-[10px]">
+                          {p.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{p.full_name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{p.department ?? "—"}</p>
+                      </div>
+                    </label>
+                  </li>
+                );
+              })}
+              {forwardCandidates.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-6">No people found</p>
+              )}
+            </ul>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setForwardMsg(null)}>Cancel</Button>
+            <Button
+              className="gradient-primary text-primary-foreground border-0"
+              disabled={forwardPicks.size === 0}
+              onClick={submitForward}
+            >
+              <Forward className="h-4 w-4 mr-2" />
+              Forward ({forwardPicks.size})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function MessageMenu({
+  mine,
+  onForward,
+  onDeleteForMe,
+  onDeleteForEveryone,
+}: {
+  mine: boolean;
+  onForward: () => void;
+  onDeleteForMe: () => void;
+  onDeleteForEveryone: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={mine ? "end" : "start"}>
+        <DropdownMenuItem onClick={onForward}>
+          <Forward className="h-4 w-4 mr-2" /> Forward
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={onDeleteForMe}>
+          <Trash2 className="h-4 w-4 mr-2" /> Delete for me
+        </DropdownMenuItem>
+        {mine && (
+          <DropdownMenuItem onClick={onDeleteForEveryone} className="text-destructive focus:text-destructive">
+            <Trash2 className="h-4 w-4 mr-2" /> Delete for everyone
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
