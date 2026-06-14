@@ -8,8 +8,8 @@ DECLARE
 BEGIN
   IF NEW.status = 'out' THEN
     SELECT COUNT(*) INTO out_count FROM public.break_logs WHERE status = 'out';
-    IF out_count >= 5 THEN
-      RAISE EXCEPTION 'Wait — 5 people are already outside.' USING ERRCODE = 'check_violation';
+    IF out_count >= 8 THEN
+      RAISE EXCEPTION 'Wait — 8 people are already outside.' USING ERRCODE = 'check_violation';
     END IF;
   END IF;
   RETURN NEW;
