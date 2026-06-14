@@ -485,22 +485,36 @@ function Chat() {
           ) : (
             <>
               <header className="px-4 py-3 border-b border-border flex items-center gap-3 sticky top-0 z-10 bg-card/95 backdrop-blur">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={active.profile_image ?? undefined} />
-                  <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
-                    {active.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={active.profile_image ?? undefined} />
+                    <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
+                      {active.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  {presenceLabel(active.last_seen_at, onlineIds, active.id).online && (
+                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-card" />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium leading-tight">{active.full_name}</p>
-                  <p className="text-xs text-muted-foreground">{active.department ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(() => {
+                      const pl = presenceLabel(active.last_seen_at, onlineIds, active.id);
+                      return pl.online ? (
+                        <span className="text-emerald-600 font-medium">Online</span>
+                      ) : (
+                        <span>{pl.text}</span>
+                      );
+                    })()}
+                  </p>
                 </div>
               </header>
               <ScrollArea className="flex-1 px-4 py-4 bg-gradient-to-b from-transparent to-accent/10">
                 <div className="space-y-2">
-                  {messages.map((m, i) => {
+                  {visibleMessages.map((m, i) => {
                     const mine = m.sender_id === user?.id;
-                    const prev = messages[i - 1];
+                    const prev = visibleMessages[i - 1];
                     const showDate = !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
                     return (
                       <div key={m.id}>
@@ -513,8 +527,16 @@ function Chat() {
                         )}
                       <motion.div
                         initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                        className={cn("flex", mine ? "justify-end" : "justify-start")}
+                        className={cn("group flex items-center gap-1", mine ? "justify-end" : "justify-start")}
                       >
+                        {mine && (
+                          <MessageMenu
+                            mine={mine}
+                            onForward={() => setForwardMsg(m)}
+                            onDeleteForMe={() => deleteForMe(m)}
+                            onDeleteForEveryone={() => deleteForEveryone(m)}
+                          />
+                        )}
                         <div className={cn(
                           "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
                           mine ? "gradient-primary text-primary-foreground rounded-br-sm" : "bg-accent/60 rounded-bl-sm"
@@ -533,11 +555,19 @@ function Chat() {
                             )}
                           </p>
                         </div>
+                        {!mine && (
+                          <MessageMenu
+                            mine={mine}
+                            onForward={() => setForwardMsg(m)}
+                            onDeleteForMe={() => deleteForMe(m)}
+                            onDeleteForEveryone={() => deleteForEveryone(m)}
+                          />
+                        )}
                       </motion.div>
                       </div>
                     );
                   })}
-                  {messages.length === 0 && (
+                  {visibleMessages.length === 0 && (
                     <p className="text-center text-xs text-muted-foreground py-8">
                       No messages yet. Start the conversation.
                     </p>
@@ -550,7 +580,30 @@ function Chat() {
                   onSubmit={(e) => { e.preventDefault(); send(); }}
                   className="border-t border-border p-3 flex items-center gap-2"
                 >
+                  <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+                    <PopoverTrigger asChild>
+                      <Button type="button" variant="ghost" size="icon" className="shrink-0">
+                        <Smile className="h-5 w-5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent side="top" align="start" className="p-0 w-auto border-0 bg-transparent shadow-none">
+                      <EmojiPicker
+                        onEmojiClick={(e) => {
+                          setDraft((d) => d + e.emoji);
+                          inputRef.current?.focus();
+                        }}
+                        emojiStyle={EmojiStyle.NATIVE}
+                        theme={Theme.AUTO}
+                        width={320}
+                        height={380}
+                        searchDisabled={false}
+                        skinTonesDisabled
+                        previewConfig={{ showPreview: false }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <Input
+                    ref={inputRef}
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder="Type a message…"
@@ -573,6 +626,114 @@ function Chat() {
           )}
         </section>
       </Card>
+
+      {/* Forward dialog */}
+      <Dialog open={!!forwardMsg} onOpenChange={(o) => { if (!o) { setForwardMsg(null); setForwardPicks(new Set()); setForwardQ(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Forward message</DialogTitle>
+            <DialogDescription className="line-clamp-2">
+              "{forwardMsg?.content}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
+            <Input
+              placeholder="Search people"
+              className="pl-8"
+              value={forwardQ}
+              onChange={(e) => setForwardQ(e.target.value)}
+            />
+          </div>
+          <ScrollArea className="h-64 -mx-2">
+            <ul className="px-2 space-y-1">
+              {forwardCandidates.map((p) => {
+                const checked = forwardPicks.has(p.id);
+                return (
+                  <li key={p.id}>
+                    <label className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-accent/40 cursor-pointer">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                          setForwardPicks((prev) => {
+                            const next = new Set(prev);
+                            if (v) next.add(p.id); else next.delete(p.id);
+                            return next;
+                          });
+                        }}
+                      />
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={p.profile_image ?? undefined} />
+                        <AvatarFallback className="gradient-primary text-primary-foreground text-[10px]">
+                          {p.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{p.full_name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{p.department ?? "—"}</p>
+                      </div>
+                    </label>
+                  </li>
+                );
+              })}
+              {forwardCandidates.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-6">No people found</p>
+              )}
+            </ul>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setForwardMsg(null)}>Cancel</Button>
+            <Button
+              className="gradient-primary text-primary-foreground border-0"
+              disabled={forwardPicks.size === 0}
+              onClick={submitForward}
+            >
+              <Forward className="h-4 w-4 mr-2" />
+              Forward ({forwardPicks.size})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function MessageMenu({
+  mine,
+  onForward,
+  onDeleteForMe,
+  onDeleteForEveryone,
+}: {
+  mine: boolean;
+  onForward: () => void;
+  onDeleteForMe: () => void;
+  onDeleteForEveryone: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={mine ? "end" : "start"}>
+        <DropdownMenuItem onClick={onForward}>
+          <Forward className="h-4 w-4 mr-2" /> Forward
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={onDeleteForMe}>
+          <Trash2 className="h-4 w-4 mr-2" /> Delete for me
+        </DropdownMenuItem>
+        {mine && (
+          <DropdownMenuItem onClick={onDeleteForEveryone} className="text-destructive focus:text-destructive">
+            <Trash2 className="h-4 w-4 mr-2" /> Delete for everyone
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
