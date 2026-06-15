@@ -75,6 +75,7 @@ function MonthlyReports() {
   const [rows, setRows] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Department filter: admin sees all + can pick one; manager/supervisor scoped to own dept
   const scopedDept = isAdmin ? (dept === "__all" ? null : dept) : profile?.department ?? null;
