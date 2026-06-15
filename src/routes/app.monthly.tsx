@@ -27,10 +27,16 @@ function daysInMonth(ym: string) {
 function elapsedDays(ym: string) {
   const [y, m] = ym.split("-").map(Number);
   const now = new Date();
-  if (y === now.getUTCFullYear() && m === now.getUTCMonth() + 1) {
-    return now.getUTCDate();
+  const lastDay =
+    y === now.getUTCFullYear() && m === now.getUTCMonth() + 1
+      ? now.getUTCDate()
+      : daysInMonth(ym);
+  // Exclude Fridays (weekly day off). getUTCDay(): 5 = Friday.
+  let count = 0;
+  for (let d = 1; d <= lastDay; d++) {
+    if (new Date(Date.UTC(y, m - 1, d)).getUTCDay() !== 5) count++;
   }
-  return daysInMonth(ym);
+  return count;
 }
 
 function categorize(mins: number, days: number): "Low" | "Medium" | "High" {
