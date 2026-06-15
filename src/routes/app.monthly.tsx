@@ -149,6 +149,15 @@ function MonthlyReports() {
       .sort((a, b) => b.total_minutes - a.total_minutes);
   }, [rows, profiles, scopedDept, ym]);
 
+  const filteredAggregated = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return aggregated;
+    return aggregated.filter((a) =>
+      a.name.toLowerCase().includes(q) ||
+      a.sgc_id.toLowerCase().includes(q)
+    );
+  }, [aggregated, searchQuery]);
+
   const counts = useMemo(() => {
     const c = { Low: 0, Medium: 0, High: 0 };
     aggregated.forEach((a) => { c[a.category]++; });

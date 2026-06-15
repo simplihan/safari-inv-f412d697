@@ -50,6 +50,18 @@ function Reports() {
     })();
   }, [from, to, canManage]);
 
+  const filteredRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => {
+      const p = profiles[r.user_id];
+      return (
+        (p?.full_name ?? "").toLowerCase().includes(q) ||
+        (p?.sgc_id ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [rows, profiles, searchQuery]);
+
   const reasonAgg = useMemo(() => {
     const m: Record<string, number> = {};
     rows.forEach((r) => { m[r.reason] = (m[r.reason] ?? 0) + (r.duration_minutes ?? 0); });
