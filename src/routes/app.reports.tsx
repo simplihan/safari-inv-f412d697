@@ -127,11 +127,21 @@ function Reports() {
       <div className="flex flex-col md:flex-row md:items-end gap-4 justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Reports & analytics</h1>
-          <p className="text-muted-foreground mt-1">{rows.length} sessions in range</p>
+          <p className="text-muted-foreground mt-1">{filteredRows.length} of {rows.length} sessions in range</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 items-end">
           <div><Label>From</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
           <div><Label>To</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search name or SGC…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-10 w-[200px] rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
         </div>
       </div>
       <div className="flex gap-2">
@@ -175,7 +185,7 @@ function Reports() {
               <tr><th className="py-2">Name</th><th>Reason</th><th>Out</th><th>In</th><th>Duration</th><th>Device</th></tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {filteredRows.map((r) => (
                 <tr key={r.id} className="border-t border-border">
                   <td className="py-2">{profiles[r.user_id]?.full_name ?? "—"}</td>
                   <td>{r.reason}</td>
@@ -185,6 +195,9 @@ function Reports() {
                   <td>{deviceByUser[r.user_id] ?? "—"}</td>
                 </tr>
               ))}
+              {filteredRows.length === 0 && rows.length > 0 && (
+                <tr><td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">No sessions match your search.</td></tr>
+              )}
             </tbody>
           </table>
         </CardContent>
