@@ -18,7 +18,9 @@ function Landing() {
           <span className="text-lg font-semibold tracking-tight">Pulse Safari</span>
         </div>
         <nav className="flex items-center gap-2">
-          <Button asChild variant="ghost"><Link to="/login">Sign in</Link></Button>
+          <Button asChild variant="ghost">
+            <Link to="/login">Sign in</Link>
+          </Button>
           <Button asChild className="gradient-primary text-primary-foreground border-0">
             <Link to="/register">Request access</Link>
           </Button>
@@ -40,11 +42,14 @@ function Landing() {
             Break & activity tracking, <span className="text-gradient">in real time</span>.
           </h1>
           <p className="mt-6 text-lg text-muted-foreground">
-            Monitor every activity in real time—from breaks and meetings to field work and productivity—with an intelligent workforce platform built for modern teams.
+            Monitor every activity in real time—from breaks and meetings to field work and productivity—with an
+            intelligent workforce platform built for modern teams.
           </p>
           <div className="mt-10 flex justify-center gap-3">
             <Button asChild size="lg" className="gradient-primary text-primary-foreground border-0 shadow-lg">
-              <Link to="/register">Get started <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Link to="/register">
+                Get started <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
               <Link to="/login">I have an account</Link>
@@ -54,23 +59,39 @@ function Landing() {
 
         <div className="mt-24 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: Clock, title: "Multi-OUT tracking", desc: "Log breaks, prayer, lunch, meetings — auto-calculated durations." },
-            { icon: Users, title: "Live monitoring", desc: "See exactly who is out and for how long, updated instantly." },
-            { icon: ShieldCheck, title: "Approval workflow", desc: "Pending registrations, role-based access, secure by default." },
+            {
+              icon: Clock,
+              title: "Multi-Out tracking",
+              desc: "Log breaks, prayer, lunch, meetings — auto-calculated durations.",
+            },
+            {
+              icon: Users,
+              title: "Live monitoring",
+              desc: "See exactly who is out and for how long, updated instantly.",
+            },
+            {
+              icon: ShieldCheck,
+              title: "Approval workflow",
+              desc: "Pending registrations, role-based access, secure by default.",
+            },
             {
               icon: Mail,
               title: "Contact us",
               desc: (
                 <>
-                  Email — <a href="mailto:harendra@simplihan.com" className="text-primary hover:underline">harendra@simplihan.com</a>
+                  Email —{" "}
+                  <a href="mailto:harendra@simplihan.com" className="text-primary hover:underline">
+                    harendra@simplihan.com
+                  </a>
                   <br />
-                  Mobile — <a href="tel:+97477707912" className="text-primary hover:underline">+974-77707912</a>
+                  Mobile —{" "}
+                  <a href="tel:+97477707912" className="text-primary hover:underline">
+                    +974-77707912
+                  </a>
                 </>
               ),
             },
           ].map((f, i) => (
-
-           
             <motion.div
               key={f.title}
               initial={{ opacity: 0, y: 20 }}
