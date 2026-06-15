@@ -1,5 +1,6 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +75,7 @@ function MonthlyReports() {
   const [rows, setRows] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Department filter: admin sees all + can pick one; manager/supervisor scoped to own dept
   const scopedDept = isAdmin ? (dept === "__all" ? null : dept) : profile?.department ?? null;
@@ -146,6 +148,15 @@ function MonthlyReports() {
       })
       .sort((a, b) => b.total_minutes - a.total_minutes);
   }, [rows, profiles, scopedDept, ym]);
+
+  const filteredAggregated = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return aggregated;
+    return aggregated.filter((a) =>
+      a.name.toLowerCase().includes(q) ||
+      a.sgc_id.toLowerCase().includes(q)
+    );
+  }, [aggregated, searchQuery]);
 
   const counts = useMemo(() => {
     const c = { Low: 0, Medium: 0, High: 0 };
@@ -255,6 +266,16 @@ function MonthlyReports() {
           <Button onClick={exportXLSX} className="gradient-primary text-primary-foreground border-0">
             <FileDown className="h-4 w-4 mr-2" /> Download Excel
           </Button>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search name or SGC…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9 w-[200px] rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
         </div>
       </div>
 
@@ -286,7 +307,7 @@ function MonthlyReports() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CalendarDays className="h-5 w-5" />
-            {ym} — {aggregated.length} staff{scopedDept ? ` · ${scopedDept}` : ""}
+            {ym} — {filteredAggregated.length} of {aggregated.length} staff{scopedDept ? ` · ${scopedDept}` : ""}
           </CardTitle>
         </CardHeader>
         <CardContent className="overflow-auto">
@@ -294,6 +315,8 @@ function MonthlyReports() {
             <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
           ) : aggregated.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">No activity in this period.</p>
+          ) : filteredAggregated.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No users match your search.</p>
           ) : (
             <table className="w-full text-sm">
               <thead className="text-left text-muted-foreground">
@@ -308,7 +331,7 @@ function MonthlyReports() {
                 </tr>
               </thead>
               <tbody>
-                {aggregated.map((a) => (
+                {filteredAggregated.map((a) => (
                   <tr key={a.user_id} className="border-t border-border">
                     <td className="py-2 font-medium">{a.name}</td>
                     <td className="text-xs">{a.sgc_id}</td>
