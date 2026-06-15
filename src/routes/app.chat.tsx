@@ -47,7 +47,13 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/chat")({ component: Chat });
 
-type Person = { id: string; full_name: string; department: string | null; profile_image: string | null; last_seen_at: string | null };
+type Person = {
+  id: string;
+  full_name: string;
+  department: string | null;
+  profile_image: string | null;
+  last_seen_at: string | null;
+};
 type Msg = {
   id: string;
   sender_id: string;
@@ -64,7 +70,8 @@ function formatWhen(iso: string) {
   const now = new Date();
   const sameDay = d.toDateString() === now.toDateString();
   if (sameDay) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  const yest = new Date(now);
+  yest.setDate(now.getDate() - 1);
   if (d.toDateString() === yest.toDateString()) return "Yesterday";
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
@@ -73,7 +80,8 @@ function dayLabel(iso: string) {
   const d = new Date(iso);
   const now = new Date();
   if (d.toDateString() === now.toDateString()) return "Today";
-  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  const yest = new Date(now);
+  yest.setDate(now.getDate() - 1);
   if (d.toDateString() === yest.toDateString()) return "Yesterday";
   return d.toLocaleDateString(undefined, { day: "2-digit", month: "long", year: "numeric" });
 }
@@ -86,10 +94,22 @@ function presenceLabel(iso: string | null, onlineIds: Set<string>, id: string): 
   const diffMs = now.getTime() - d.getTime();
   if (diffMs < 60_000) return { online: true, text: "Online" };
   const sameDay = d.toDateString() === now.toDateString();
-  if (sameDay) return { online: false, text: `Last seen today at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` };
-  const yest = new Date(now); yest.setDate(now.getDate() - 1);
-  if (d.toDateString() === yest.toDateString()) return { online: false, text: `Last seen yesterday at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` };
-  return { online: false, text: `Last seen ${d.toLocaleDateString([], { month: "short", day: "numeric" })} at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` };
+  if (sameDay)
+    return {
+      online: false,
+      text: `Last seen today at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+    };
+  const yest = new Date(now);
+  yest.setDate(now.getDate() - 1);
+  if (d.toDateString() === yest.toDateString())
+    return {
+      online: false,
+      text: `Last seen yesterday at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+    };
+  return {
+    online: false,
+    text: `Last seen ${d.toLocaleDateString([], { month: "short", day: "numeric" })} at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+  };
 }
 
 function Chat() {
@@ -110,13 +130,15 @@ function Chat() {
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Msg | null>(null);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>(
-    typeof Notification !== "undefined" ? Notification.permission : "default"
+    typeof Notification !== "undefined" ? Notification.permission : "default",
   );
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeIdRef = useRef<string | null>(null);
   const msgRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  useEffect(() => { activeIdRef.current = active?.id ?? null; }, [active?.id]);
+  useEffect(() => {
+    activeIdRef.current = active?.id ?? null;
+  }, [active?.id]);
 
   // dept chat on/off
   useEffect(() => {
@@ -134,7 +156,9 @@ function Chat() {
       .channel("chat-page-settings")
       .on("postgres_changes", { event: "*", schema: "public", table: "dept_chat_settings" }, load)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [profile?.department]);
 
   const requestNotif = async () => {
@@ -151,7 +175,9 @@ function Chat() {
     const k = `notif-asked-${user?.id ?? ""}`;
     if (localStorage.getItem(k)) return;
     localStorage.setItem(k, "1");
-    Notification.requestPermission().then(setNotifPerm).catch(() => {});
+    Notification.requestPermission()
+      .then(setNotifPerm)
+      .catch(() => {});
   }, [user?.id, profile]);
   const fireDesktopNotif = (m: Msg, from: Person | undefined) => {
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
@@ -163,8 +189,13 @@ function Chat() {
         tag: `msg-${m.sender_id}`,
         icon: from?.profile_image ?? undefined,
       });
-      n.onclick = () => { window.focus(); n.close(); };
-    } catch { /* ignore */ }
+      n.onclick = () => {
+        window.focus();
+        n.close();
+      };
+    } catch {
+      /* ignore */
+    }
   };
 
   // load contacts (everyone visible to me — RLS handles dept scoping)
@@ -182,7 +213,9 @@ function Chat() {
   // Heartbeat: update my last_seen_at every 30s + on focus
   useEffect(() => {
     if (!user) return;
-    const ping = () => { supabase.rpc("touch_last_seen"); };
+    const ping = () => {
+      supabase.rpc("touch_last_seen");
+    };
     ping();
     const iv = setInterval(ping, 30_000);
     const onFocus = () => ping();
@@ -205,7 +238,9 @@ function Chat() {
     }).subscribe(async (status) => {
       if (status === "SUBSCRIBED") await ch.track({ at: new Date().toISOString() });
     });
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [user?.id]);
 
   // Refresh peers' last_seen periodically
@@ -213,9 +248,7 @@ function Chat() {
     if (!user) return;
     const refresh = async () => {
       const { data } = await supabase.rpc("list_directory");
-      const map = new Map<string, string | null>(
-        ((data ?? []) as any[]).map((p) => [p.id, p.last_seen_at])
-      );
+      const map = new Map<string, string | null>(((data ?? []) as any[]).map((p) => [p.id, p.last_seen_at]));
       setPeople((prev) => prev.map((p) => ({ ...p, last_seen_at: map.get(p.id) ?? p.last_seen_at })));
     };
     const iv = setInterval(refresh, 45_000);
@@ -225,9 +258,13 @@ function Chat() {
   // Load my hidden messages
   useEffect(() => {
     if (!user) return;
-    supabase.from("message_hidden").select("message_id").eq("user_id", user.id).then(({ data }) => {
-      setHiddenIds(new Set((data ?? []).map((r: any) => r.message_id)));
-    });
+    supabase
+      .from("message_hidden")
+      .select("message_id")
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        setHiddenIds(new Set((data ?? []).map((r: any) => r.message_id)));
+      });
   }, [user?.id]);
 
   // load unread counts + last message per peer
@@ -238,7 +275,9 @@ function Chat() {
       supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(500),
     ]);
     const counts: Record<string, number> = {};
-    (unreadRows ?? []).forEach((m: any) => { counts[m.sender_id] = (counts[m.sender_id] ?? 0) + 1; });
+    (unreadRows ?? []).forEach((m: any) => {
+      counts[m.sender_id] = (counts[m.sender_id] ?? 0) + 1;
+    });
     setUnread(counts);
     const last: Record<string, Msg> = {};
     (recent ?? []).forEach((m: any) => {
@@ -247,7 +286,9 @@ function Chat() {
     });
     setLastMsg(last);
   };
-  useEffect(() => { loadOverview(); }, [user?.id]);
+  useEffect(() => {
+    loadOverview();
+  }, [user?.id]);
 
   // load conversation
   const loadConvo = async (other: Person) => {
@@ -255,17 +296,25 @@ function Chat() {
     const { data } = await supabase
       .from("messages")
       .select("*")
-      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${other.id}),and(sender_id.eq.${other.id},recipient_id.eq.${user.id})`)
+      .or(
+        `and(sender_id.eq.${user.id},recipient_id.eq.${other.id}),and(sender_id.eq.${other.id},recipient_id.eq.${user.id})`,
+      )
       .order("created_at", { ascending: true });
     setMessages((data ?? []) as Msg[]);
     // mark delivered + read for messages I received
     const now = new Date().toISOString();
-    await supabase.from("messages").update({ delivered_at: now, read_at: now })
-      .eq("recipient_id", user.id).eq("sender_id", other.id).is("read_at", null);
+    await supabase
+      .from("messages")
+      .update({ delivered_at: now, read_at: now })
+      .eq("recipient_id", user.id)
+      .eq("sender_id", other.id)
+      .is("read_at", null);
     loadOverview();
   };
 
-  useEffect(() => { if (active) loadConvo(active); /* eslint-disable-next-line */ }, [active?.id]);
+  useEffect(() => {
+    if (active) loadConvo(active); /* eslint-disable-next-line */
+  }, [active?.id]);
 
   // realtime
   useEffect(() => {
@@ -309,10 +358,14 @@ function Chat() {
         });
       })
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [user?.id, active?.id, people]);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
 
   const send = async () => {
     const text = draft.trim();
@@ -367,24 +420,18 @@ function Chat() {
   }, [people, lastMsg]);
   const filtered = useMemo(
     () => sorted.filter((p) => p.full_name.toLowerCase().includes(q.toLowerCase())),
-    [sorted, q]
+    [sorted, q],
   );
 
-  const sameDept = (p: Person) =>
-    !!profile?.department && p.department === profile.department;
-  const canMessage = active ? (sameDept(active) && (canManage || myDeptChatOn)) : false;
+  const sameDept = (p: Person) => !!profile?.department && p.department === profile.department;
+  const canMessage = active ? sameDept(active) && (canManage || myDeptChatOn) : false;
 
-  const visibleMessages = useMemo(
-    () => messages.filter((m) => !hiddenIds.has(m.id)),
-    [messages, hiddenIds]
-  );
+  const visibleMessages = useMemo(() => messages.filter((m) => !hiddenIds.has(m.id)), [messages, hiddenIds]);
 
   const forwardCandidates = useMemo(
-    () => people.filter((p) =>
-      (canManage || sameDept(p)) &&
-      p.full_name.toLowerCase().includes(forwardQ.toLowerCase())
-    ),
-    [people, forwardQ, canManage, profile?.department]
+    () =>
+      people.filter((p) => (canManage || sameDept(p)) && p.full_name.toLowerCase().includes(forwardQ.toLowerCase())),
+    [people, forwardQ, canManage, profile?.department],
   );
 
   if (!canManage && !myDeptChatOn) {
@@ -405,7 +452,7 @@ function Chat() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Chat</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Private 1-on-1 messages within your department · Auto-deleted after 10 days
+            Private end-to-end encrypted messages within your department · Auto-deleted after 10 days
           </p>
         </div>
         {notifPerm !== "granted" && (
@@ -420,11 +467,11 @@ function Chat() {
         <aside className="border-r border-border flex flex-col min-h-0 overflow-hidden">
           <div className="p-3 border-b border-border space-y-2 shrink-0">
             <div className="flex items-center justify-between px-1">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Chats
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Chats</p>
               {profile?.department && (
-                <Badge variant="secondary" className="text-[10px]">{profile.department}</Badge>
+                <Badge variant="secondary" className="text-[10px]">
+                  {profile.department}
+                </Badge>
               )}
             </div>
             <div className="relative">
@@ -444,13 +491,17 @@ function Chat() {
                       onClick={() => setActive(p)}
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-accent/40 transition-colors",
-                        active?.id === p.id && "bg-accent/60"
+                        active?.id === p.id && "bg-accent/60",
                       )}
                     >
                       <Avatar className="h-11 w-11">
                         <AvatarImage src={p.profile_image ?? undefined} />
                         <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
-                          {p.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                          {p.full_name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .slice(0, 2)
+                            .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
@@ -463,17 +514,20 @@ function Chat() {
                           )}
                         </div>
                         <div className="flex items-center justify-between gap-2 mt-0.5">
-                          <p className={cn(
-                            "text-xs truncate flex items-center gap-1",
-                            unread[p.id] > 0 ? "text-foreground font-medium" : "text-muted-foreground"
-                          )}>
-                            {mineLast && (
-                              last?.read_at
-                                ? <CheckCheck className="h-3 w-3 text-primary shrink-0" />
-                                : last?.delivered_at
-                                  ? <CheckCheck className="h-3 w-3 shrink-0 opacity-60" />
-                                  : <Check className="h-3 w-3 shrink-0 opacity-60" />
+                          <p
+                            className={cn(
+                              "text-xs truncate flex items-center gap-1",
+                              unread[p.id] > 0 ? "text-foreground font-medium" : "text-muted-foreground",
                             )}
+                          >
+                            {mineLast &&
+                              (last?.read_at ? (
+                                <CheckCheck className="h-3 w-3 text-primary shrink-0" />
+                              ) : last?.delivered_at ? (
+                                <CheckCheck className="h-3 w-3 shrink-0 opacity-60" />
+                              ) : (
+                                <Check className="h-3 w-3 shrink-0 opacity-60" />
+                              ))}
                             <span className="truncate">{preview}</span>
                           </p>
                           {unread[p.id] > 0 && (
@@ -510,7 +564,11 @@ function Chat() {
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={active.profile_image ?? undefined} />
                     <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
-                      {active.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                      {active.full_name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join("")}
                     </AvatarFallback>
                   </Avatar>
                   {presenceLabel(active.last_seen_at, onlineIds, active.id).online && (
@@ -536,10 +594,16 @@ function Chat() {
                   {visibleMessages.map((m, i) => {
                     const mine = m.sender_id === user?.id;
                     const prev = visibleMessages[i - 1];
-                    const showDate = !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
+                    const showDate =
+                      !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
                     const replyTo = m.reply_to_id ? visibleMessages.find((x) => x.id === m.reply_to_id) : undefined;
                     return (
-                      <div key={m.id} ref={(el) => { msgRefs.current[m.id] = el; }}>
+                      <div
+                        key={m.id}
+                        ref={(el) => {
+                          msgRefs.current[m.id] = el;
+                        }}
+                      >
                         {showDate && (
                           <div className="flex justify-center my-3">
                             <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 rounded-full px-3 py-1">
@@ -548,7 +612,8 @@ function Chat() {
                           </div>
                         )}
                         <motion.div
-                          initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
                           className={cn("group flex items-center gap-1", mine ? "justify-end" : "justify-start")}
                         >
                           {mine && (
@@ -560,10 +625,14 @@ function Chat() {
                               onReply={() => setReplyingTo(m)}
                             />
                           )}
-                          <div className={cn(
-                            "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
-                            mine ? "gradient-primary text-primary-foreground rounded-br-sm" : "bg-accent/60 rounded-bl-sm"
-                          )}>
+                          <div
+                            className={cn(
+                              "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm",
+                              mine
+                                ? "gradient-primary text-primary-foreground rounded-br-sm"
+                                : "bg-accent/60 rounded-bl-sm",
+                            )}
+                          >
                             {replyTo && (
                               <button
                                 type="button"
@@ -575,7 +644,7 @@ function Chat() {
                                   "w-full text-left mb-1.5 rounded-lg px-2.5 py-1.5 text-xs border-l-2",
                                   mine
                                     ? "bg-white/10 border-white/40 text-white/90"
-                                    : "bg-primary/5 border-primary/30 text-muted-foreground"
+                                    : "bg-primary/5 border-primary/30 text-muted-foreground",
                                 )}
                               >
                                 <p className="font-medium truncate">
@@ -585,17 +654,23 @@ function Chat() {
                               </button>
                             )}
                             <p className="whitespace-pre-wrap break-words">{m.content}</p>
-                            <p className={cn(
-                              "text-[10px] mt-1 opacity-70 flex items-center gap-1",
-                              mine ? "justify-end" : ""
-                            )}>
-                              <span>{new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                              {mine && (m.read_at
-                                ? <CheckCheck className="h-3 w-3" />
-                                : m.delivered_at
-                                  ? <CheckCheck className="h-3 w-3 opacity-60" />
-                                  : <Check className="h-3 w-3 opacity-60" />
+                            <p
+                              className={cn(
+                                "text-[10px] mt-1 opacity-70 flex items-center gap-1",
+                                mine ? "justify-end" : "",
                               )}
+                            >
+                              <span>
+                                {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                              {mine &&
+                                (m.read_at ? (
+                                  <CheckCheck className="h-3 w-3" />
+                                ) : m.delivered_at ? (
+                                  <CheckCheck className="h-3 w-3 opacity-60" />
+                                ) : (
+                                  <Check className="h-3 w-3 opacity-60" />
+                                ))}
                             </p>
                           </div>
                           {!mine && (
@@ -621,7 +696,10 @@ function Chat() {
               </ScrollArea>
               {canMessage ? (
                 <form
-                  onSubmit={(e) => { e.preventDefault(); send(); }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    send();
+                  }}
                   className="border-t border-border"
                 >
                   {replyingTo && (
@@ -650,7 +728,11 @@ function Chat() {
                           <Smile className="h-5 w-5" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent side="top" align="start" className="p-0 w-auto border-0 bg-transparent shadow-none">
+                      <PopoverContent
+                        side="top"
+                        align="start"
+                        className="p-0 w-auto border-0 bg-transparent shadow-none"
+                      >
                         <EmojiPicker
                           onEmojiClick={(e) => {
                             setDraft((d) => d + e.emoji);
@@ -693,13 +775,20 @@ function Chat() {
       </Card>
 
       {/* Forward dialog */}
-      <Dialog open={!!forwardMsg} onOpenChange={(o) => { if (!o) { setForwardMsg(null); setForwardPicks(new Set()); setForwardQ(""); } }}>
+      <Dialog
+        open={!!forwardMsg}
+        onOpenChange={(o) => {
+          if (!o) {
+            setForwardMsg(null);
+            setForwardPicks(new Set());
+            setForwardQ("");
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Forward message</DialogTitle>
-            <DialogDescription className="line-clamp-2">
-              "{forwardMsg?.content}"
-            </DialogDescription>
+            <DialogDescription className="line-clamp-2">"{forwardMsg?.content}"</DialogDescription>
           </DialogHeader>
           <div className="relative">
             <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
@@ -722,7 +811,8 @@ function Chat() {
                         onCheckedChange={(v) => {
                           setForwardPicks((prev) => {
                             const next = new Set(prev);
-                            if (v) next.add(p.id); else next.delete(p.id);
+                            if (v) next.add(p.id);
+                            else next.delete(p.id);
                             return next;
                           });
                         }}
@@ -730,7 +820,11 @@ function Chat() {
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={p.profile_image ?? undefined} />
                         <AvatarFallback className="gradient-primary text-primary-foreground text-[10px]">
-                          {p.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                          {p.full_name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .slice(0, 2)
+                            .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
@@ -747,7 +841,9 @@ function Chat() {
             </ul>
           </ScrollArea>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setForwardMsg(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setForwardMsg(null)}>
+              Cancel
+            </Button>
             <Button
               className="gradient-primary text-primary-foreground border-0"
               disabled={forwardPicks.size === 0}
@@ -779,11 +875,7 @@ function MessageMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-        >
+        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
           <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
