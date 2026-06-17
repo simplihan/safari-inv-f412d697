@@ -122,7 +122,7 @@ function NotificationsAdmin() {
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Notification Tiltle here"
+              placeholder="Notification tiltle here"
               maxLength={120}
             />
           </div>
