@@ -56,7 +56,9 @@ function NotificationsAdmin() {
       .channel("notifications-admin")
       .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, load)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, []);
 
   if (!canManage) return <Navigate to="/app/dashboard" />;
@@ -104,26 +106,43 @@ function NotificationsAdmin() {
         </div>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
-          <p className="text-sm text-muted-foreground">Broadcast announcements to all users or a specific department.</p>
+          <p className="text-sm text-muted-foreground">
+            Broadcast announcements to all users or a specific department.
+          </p>
         </div>
       </div>
 
       <Card className="glass">
-        <CardHeader><CardTitle>New notification</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>New notification</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="System maintenance tonight" maxLength={120} />
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Notification Tiltle here"
+              maxLength={120}
+            />
           </div>
           <div>
             <Label>Message</Label>
-            <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Details users should know..." rows={4} maxLength={1000} />
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Details users should know..."
+              rows={4}
+              maxLength={1000}
+            />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <Label>Priority</Label>
               <Select value={priority} onValueChange={(v) => setPriority(v as NotificationPriority)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="info">Info</SelectItem>
                   <SelectItem value="warning">Warning</SelectItem>
@@ -134,7 +153,9 @@ function NotificationsAdmin() {
             <div>
               <Label>Audience</Label>
               <Select value={scope} onValueChange={(v) => setScope(v as NotificationScope)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="global">Everyone</SelectItem>
                   <SelectItem value="department">Specific department</SelectItem>
@@ -145,10 +166,14 @@ function NotificationsAdmin() {
               <div>
                 <Label>Department</Label>
                 <Select value={department} onValueChange={setDepartment}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
                   <SelectContent>
                     {allowedDepartments.map((d) => (
-                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -162,7 +187,9 @@ function NotificationsAdmin() {
       </Card>
 
       <Card className="glass">
-        <CardHeader><CardTitle>Recent notifications</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Recent notifications</CardTitle>
+        </CardHeader>
         <CardContent>
           {items.length === 0 ? (
             <p className="text-sm text-muted-foreground">No notifications yet.</p>
