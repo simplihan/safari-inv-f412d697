@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +60,8 @@ function Monitoring() {
   const [editRemarks, setEditRemarks] = useState("");
   const [editOut, setEditOut] = useState("");
   const [editIn, setEditIn] = useState("");
+
+  if (!allowed) return <Navigate to="/app/dashboard" />;
 
   const handleStop = async (activityId: string) => {
     setBusy(activityId);
