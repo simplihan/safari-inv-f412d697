@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Search, Pencil, UserPlus, KeyRound, Power } from "lucide-react";
+import { Search, Pencil, UserPlus, KeyRound, Power, ShieldCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -21,13 +21,15 @@ import { useDepartments } from "@/hooks/use-departments";
 export const Route = createFileRoute("/app/staff")({ component: Staff });
 
 function Staff() {
-  const { canManage, isAdmin, isManager } = useAuth();
-  const canEdit = isAdmin || isManager;
+  const { canManage, isAdmin, isManager, hasPermission } = useAuth();
+  const allowed = canManage || hasPermission("manage_staff");
+  const canEdit = isAdmin || isManager || hasPermission("manage_staff");
   const setActive = useServerFn(adminSetActive);
   const [rows, setRows] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<any | null>(null);
   const [creating, setCreating] = useState(false);
+  const [permTarget, setPermTarget] = useState<any | null>(null);
 
   const load = async () => {
     const { data: profiles } = await supabase.from("profiles").select("*").order("full_name");
@@ -41,7 +43,7 @@ function Staff() {
   };
 
   useEffect(() => { load(); }, []);
-  if (!canManage) return <Navigate to="/app/dashboard" />;
+  if (!allowed) return <Navigate to="/app/dashboard" />;
 
   const filtered = rows.filter((r) =>
     !q || r.full_name?.toLowerCase().includes(q.toLowerCase()) || r.email?.toLowerCase().includes(q.toLowerCase())
@@ -106,6 +108,11 @@ function Staff() {
                 </Button>
               )}
               {isAdmin && (
+                <Button size="sm" variant="outline" onClick={() => setPermTarget(r)}>
+                  <ShieldCheck className="h-4 w-4 mr-1" /> Permissions
+                </Button>
+              )}
+              {isAdmin && (
                 <Button
                   size="sm"
                   variant={r.status === "approved" ? "outline" : "default"}
@@ -122,6 +129,7 @@ function Staff() {
       </div>
       <EditDialog user={editing} onClose={() => setEditing(null)} onSaved={load} isAdmin={isAdmin} canEditEmail={isAdmin || isManager} />
       {creating && <CreateDialog onClose={() => setCreating(false)} onCreated={load} />}
+      {permTarget && <PermissionsDialog user={permTarget} onClose={() => setPermTarget(null)} />}
     </div>
   );
 }
