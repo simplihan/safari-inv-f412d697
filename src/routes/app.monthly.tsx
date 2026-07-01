@@ -68,7 +68,8 @@ function thisMonthYM() {
 }
 
 function MonthlyReports() {
-  const { canManage, isAdmin, profile } = useAuth();
+  const { canManage, isAdmin, profile, hasPermission } = useAuth();
+  const allowed = canManage || hasPermission("view_monthly");
   const [ym, setYm] = useState(thisMonthYM());
   const [dept, setDept] = useState<string>("__all");
   const [departments, setDepartments] = useState<string[]>([]);
@@ -88,7 +89,7 @@ function MonthlyReports() {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (!canManage) return;
+    if (!allowed) return;
     const { start, end } = monthRange(ym);
     setLoading(true);
     (async () => {
@@ -102,11 +103,11 @@ function MonthlyReports() {
       setRows(logs ?? []);
       setLoading(false);
     })();
-  }, [ym, canManage]);
+  }, [ym, allowed]);
 
   // Auto-notification: prompt to download last month on day 1-5 of current month
   useEffect(() => {
-    if (!canManage) return;
+    if (!allowed) return;
     const today = new Date();
     if (today.getUTCDate() > 5) return;
     const lm = lastMonthYM();
@@ -118,7 +119,7 @@ function MonthlyReports() {
       duration: 10000,
       action: { label: "Open", onClick: () => setYm(lm) },
     });
-  }, [canManage]);
+  }, [allowed]);
 
   const aggregated = useMemo(() => {
     const days = elapsedDays(ym);
@@ -164,7 +165,7 @@ function MonthlyReports() {
     return c;
   }, [aggregated]);
 
-  if (!canManage) return <Navigate to="/app/dashboard" />;
+  if (!allowed) return <Navigate to="/app/dashboard" />;
 
   const exportXLSX = () => {
     const { label } = monthRange(ym);
