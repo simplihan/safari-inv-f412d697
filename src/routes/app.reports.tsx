@@ -31,7 +31,8 @@ export const Route = createFileRoute("/app/reports")({ component: Reports });
 const COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"];
 
 function Reports() {
-  const { canManage } = useAuth();
+  const { canManage, hasPermission } = useAuth();
+  const allowed = canManage || hasPermission("view_reports");
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
   const [from, setFrom] = useState(weekAgo);
@@ -42,7 +43,7 @@ function Reports() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (!canManage) return;
+    if (!allowed) return;
     const fromIso = new Date(from).toISOString();
     const toIso = new Date(new Date(to).getTime() + 86400_000).toISOString();
     (async () => {
@@ -68,7 +69,7 @@ function Reports() {
       });
       setDeviceByUser(map);
     })();
-  }, [from, to, canManage]);
+  }, [from, to, allowed]);
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -98,7 +99,7 @@ function Reports() {
       .slice(0, 10);
   }, [rows, profiles]);
 
-  if (!canManage) return <Navigate to="/app/dashboard" />;
+  if (!allowed) return <Navigate to="/app/dashboard" />;
 
   const exportCSV = () => {
     const header = ["Name", "Department", "Reason", "Remarks", "Out", "In", "Duration (min)", "Device"];

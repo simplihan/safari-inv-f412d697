@@ -5,6 +5,24 @@ import type { Session, User } from "@supabase/supabase-js";
 export type AppRole = "admin" | "manager" | "supervisor" | "staff";
 export type UserStatus = "pending" | "approved" | "rejected";
 
+export type AppPermission =
+  | "view_reports"
+  | "view_monthly"
+  | "view_monitoring"
+  | "view_pending"
+  | "manage_staff"
+  | "view_audit"
+  | "send_notifications"
+  | "manage_chat_settings"
+  | "cross_department";
+
+export type PermissionScope = "department" | "global";
+
+export interface PermissionGrant {
+  permission: AppPermission;
+  scope: PermissionScope;
+}
+
 export interface Profile {
   id: string;
   full_name: string;
@@ -22,6 +40,7 @@ interface AuthCtx {
   session: Session | null;
   profile: Profile | null;
   roles: AppRole[];
+  permissions: PermissionGrant[];
   loading: boolean;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -30,6 +49,8 @@ interface AuthCtx {
   isSupervisor: boolean;
   isStaff: boolean;
   canManage: boolean;
+  hasPermission: (p: AppPermission) => boolean;
+  hasGlobalPermission: (p: AppPermission) => boolean;
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -40,15 +61,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [permissions, setPermissions] = useState<PermissionGrant[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadProfile = async (userId: string) => {
-    const [{ data: prof }, { data: roleRows }] = await Promise.all([
+    const [{ data: prof }, { data: roleRows }, { data: permRows }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", userId),
+      supabase.from("user_permissions").select("permission, scope").eq("user_id", userId),
     ]);
     setProfile((prof as Profile) ?? null);
     setRoles(((roleRows as { role: AppRole }[]) ?? []).map((r) => r.role));
+    setPermissions(((permRows as PermissionGrant[]) ?? []));
   };
 
   useEffect(() => {
@@ -62,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
         setRoles([]);
+        setPermissions([]);
         localStorage.removeItem("loginAt");
       }
     });
@@ -101,6 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isManager = roles.includes("manager");
   const isSupervisor = roles.includes("supervisor");
   const isStaff = roles.includes("staff");
+  const hasPermission = (p: AppPermission) =>
+    isAdmin || permissions.some((g) => g.permission === p);
+  const hasGlobalPermission = (p: AppPermission) =>
+    isAdmin || permissions.some((g) => g.permission === p && g.scope === "global");
 
   return (
     <Ctx.Provider
@@ -109,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         roles,
+        permissions,
         loading,
         signOut,
         refresh,
@@ -117,6 +147,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isSupervisor,
         isStaff,
         canManage: isAdmin || isManager || isSupervisor,
+        hasPermission,
+        hasGlobalPermission,
       }}
     >
       {children}

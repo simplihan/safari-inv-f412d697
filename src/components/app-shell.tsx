@@ -30,7 +30,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { NotificationsProvider } from "@/hooks/use-notifications";
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { profile, roles, signOut, canManage, isStaff, isAdmin, isManager, user } = useAuth();
+  const { profile, roles, signOut, canManage, isStaff, isAdmin, isManager, user, hasPermission } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
@@ -84,14 +84,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/app/chat", label: "Chat", icon: MessageCircle, show: showChat, badge: unreadTotal },
     { to: "/app/chat-settings", label: "Chat Settings", icon: MessagesSquare, show: canManage },
     { to: "/app/departments", label: "Departments", icon: Building2, show: isAdmin },
-    { to: "/app/monitoring", label: "Live Monitoring", icon: Activity, show: canManage },
+    { to: "/app/monitoring", label: "Live Monitoring", icon: Activity, show: canManage || hasPermission("view_monitoring") },
     { to: "/app/timeline", label: "My Activity", icon: History, show: isStaff },
-    { to: "/app/pending", label: "Pending Requests", icon: UserCheck, show: canManage },
-    { to: "/app/staff", label: "Staff Management", icon: Users, show: canManage },
-    { to: "/app/reports", label: "Reports", icon: FileBarChart, show: canManage },
-    { to: "/app/monthly", label: "Monthly Reports", icon: CalendarRange, show: canManage },
-    { to: "/app/notifications", label: "Notifications", icon: Megaphone, show: isAdmin || isManager },
-    { to: "/app/audit", label: "Audit Log", icon: ShieldCheck, show: isAdmin },
+    { to: "/app/pending", label: "Pending Requests", icon: UserCheck, show: canManage || hasPermission("view_pending") },
+    { to: "/app/staff", label: "Staff Management", icon: Users, show: canManage || hasPermission("manage_staff") },
+    { to: "/app/reports", label: "Reports", icon: FileBarChart, show: canManage || hasPermission("view_reports") },
+    { to: "/app/monthly", label: "Monthly Reports", icon: CalendarRange, show: canManage || hasPermission("view_monthly") },
+    { to: "/app/notifications", label: "Notifications", icon: Megaphone, show: isAdmin || isManager || hasPermission("send_notifications") },
+    { to: "/app/audit", label: "Audit Log", icon: ShieldCheck, show: isAdmin || hasPermission("view_audit") },
     { to: "/app/profile", label: "Profile", icon: Settings, show: true },
   ].filter((i) => i.show);
 

@@ -12,14 +12,15 @@ import { Search } from "lucide-react";
 export const Route = createFileRoute("/app/audit")({ component: AuditPage });
 
 function AuditPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, hasPermission } = useAuth();
+  const allowed = isAdmin || hasPermission("view_audit");
   const [rows, setRows] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [entity, setEntity] = useState<string>("all");
   const [q, setQ] = useState("");
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!allowed) return;
     (async () => {
       const { data } = await supabase
         .from("audit_logs")
@@ -30,9 +31,9 @@ function AuditPage() {
       const { data: profs } = await supabase.from("profiles").select("id, full_name");
       setProfiles(Object.fromEntries((profs ?? []).map((p: any) => [p.id, p])));
     })();
-  }, [isAdmin]);
+  }, [allowed]);
 
-  if (!isAdmin) return <Navigate to="/app/dashboard" />;
+  if (!allowed) return <Navigate to="/app/dashboard" />;
 
   const filtered = rows.filter((r) => {
     if (entity !== "all" && r.entity !== entity) return false;

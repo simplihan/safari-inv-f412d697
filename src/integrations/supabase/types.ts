@@ -464,6 +464,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permissions: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          scope: Database["public"]["Enums"]["permission_scope"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          scope?: Database["public"]["Enums"]["permission_scope"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          permission?: Database["public"]["Enums"]["app_permission"]
+          scope?: Database["public"]["Enums"]["permission_scope"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -504,6 +534,20 @@ export type Database = {
         Returns: number
       }
       get_email_by_sgc: { Args: { _sgc: string }; Returns: string }
+      has_global_permission: {
+        Args: {
+          _perm: Database["public"]["Enums"]["app_permission"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_permission: {
+        Args: {
+          _perm: Database["public"]["Enums"]["app_permission"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       list_directory: {
         Args: never
         Returns: {
@@ -541,6 +585,16 @@ export type Database = {
       touch_last_seen: { Args: never; Returns: undefined }
     }
     Enums: {
+      app_permission:
+        | "view_reports"
+        | "view_monthly"
+        | "view_monitoring"
+        | "view_pending"
+        | "manage_staff"
+        | "view_audit"
+        | "send_notifications"
+        | "manage_chat_settings"
+        | "cross_department"
       app_role: "admin" | "manager" | "staff" | "supervisor"
       break_reason:
         | "Break"
@@ -549,6 +603,7 @@ export type Database = {
         | "Shopping"
         | "Meeting"
         | "Other"
+      permission_scope: "department" | "global"
       user_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -677,6 +732,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_permission: [
+        "view_reports",
+        "view_monthly",
+        "view_monitoring",
+        "view_pending",
+        "manage_staff",
+        "view_audit",
+        "send_notifications",
+        "manage_chat_settings",
+        "cross_department",
+      ],
       app_role: ["admin", "manager", "staff", "supervisor"],
       break_reason: [
         "Break",
@@ -686,6 +752,7 @@ export const Constants = {
         "Meeting",
         "Other",
       ],
+      permission_scope: ["department", "global"],
       user_status: ["pending", "approved", "rejected"],
     },
   },
