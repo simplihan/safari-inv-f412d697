@@ -387,3 +387,119 @@ function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
     </Dialog>
   );
 }
+const PERMISSION_LABELS: { key: string; label: string; desc: string }[] = [
+  { key: "view_reports", label: "View Reports", desc: "Access the Reports & Analytics page." },
+  { key: "view_monthly", label: "View Monthly Reports", desc: "Access the Monthly Reports page." },
+  { key: "view_monitoring", label: "View Live Monitoring", desc: "See the live activity board." },
+  { key: "view_pending", label: "View Pending Requests", desc: "See and approve new user requests." },
+  { key: "manage_staff", label: "Manage Staff", desc: "Open and edit the Staff Management page." },
+  { key: "view_audit", label: "View Audit Log", desc: "Read the audit log." },
+  { key: "send_notifications", label: "Send Notifications", desc: "Create global or department notifications." },
+  { key: "manage_chat_settings", label: "Manage Chat Settings", desc: "Toggle department chat availability." },
+  { key: "cross_department", label: "Cross-Department Access", desc: "See users from any department (global scope only)." },
+];
+
+function PermissionsDialog({ user, onClose }: { user: any; onClose: () => void }) {
+  const [rows, setRows] = useState<{ permission: string; scope: "department" | "global" }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("user_permissions")
+        .select("permission, scope")
+        .eq("user_id", user.id);
+      setRows(((data as any) ?? []).map((r: any) => ({ permission: r.permission, scope: r.scope })));
+      setLoading(false);
+    })();
+  }, [user.id]);
+
+  const has = (k: string) => rows.find((r) => r.permission === k);
+  const toggle = (k: string) => {
+    setRows((prev) =>
+      prev.some((r) => r.permission === k)
+        ? prev.filter((r) => r.permission !== k)
+        : [...prev, { permission: k, scope: k === "cross_department" ? "global" : "department" }]
+    );
+  };
+  const setScope = (k: string, scope: "department" | "global") => {
+    setRows((prev) => prev.map((r) => (r.permission === k ? { ...r, scope } : r)));
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const { error: delErr } = await supabase.from("user_permissions").delete().eq("user_id", user.id);
+      if (delErr) throw delErr;
+      if (rows.length) {
+        const payload = rows.map((r) => ({
+          user_id: user.id,
+          permission: r.permission as any,
+          scope: r.scope as any,
+        }));
+        const { error } = await supabase.from("user_permissions").insert(payload);
+        if (error) throw error;
+      }
+      toast.success("Permissions updated");
+      onClose();
+    } catch (e: any) {
+      toast.error(friendlyError(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="glass-strong max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Individual permissions — {user.full_name}</DialogTitle>
+        </DialogHeader>
+        <p className="text-xs text-muted-foreground -mt-2">
+          Extra capabilities granted on top of the user's role. Role permissions remain unchanged.
+        </p>
+        {loading ? (
+          <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
+        ) : (
+          <div className="space-y-2">
+            {PERMISSION_LABELS.map((p) => {
+              const active = has(p.key);
+              return (
+                <div key={p.key} className="rounded-md border border-border p-3 flex items-start gap-3">
+                  <Checkbox
+                    checked={!!active}
+                    onCheckedChange={() => toggle(p.key)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{p.label}</p>
+                    <p className="text-xs text-muted-foreground">{p.desc}</p>
+                  </div>
+                  {active && p.key !== "cross_department" && (
+                    <Select
+                      value={active.scope}
+                      onValueChange={(v: "department" | "global") => setScope(p.key, v)}
+                    >
+                      <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="department">Department</SelectItem>
+                        <SelectItem value="global">Global</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button onClick={save} disabled={saving || loading} className="gradient-primary text-primary-foreground border-0">
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
