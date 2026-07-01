@@ -13,7 +13,8 @@ import { Navigate } from "@tanstack/react-router";
 export const Route = createFileRoute("/app/pending")({ component: Pending });
 
 function Pending() {
-  const { canManage } = useAuth();
+  const { canManage, hasPermission } = useAuth();
+  const allowed = canManage || hasPermission("view_pending");
   const [rows, setRows] = useState<any[]>([]);
 
   const load = async () => {
@@ -27,7 +28,7 @@ function Pending() {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
-  if (!canManage) return <Navigate to="/app/dashboard" />;
+  if (!allowed) return <Navigate to="/app/dashboard" />;
 
   const decide = async (id: string, status: "approved" | "rejected") => {
     const { error } = await supabase.from("profiles").update({ status }).eq("id", id);
