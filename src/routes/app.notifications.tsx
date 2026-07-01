@@ -26,7 +26,8 @@ const priorityClass: Record<NotificationPriority, string> = {
 };
 
 function NotificationsAdmin() {
-  const { canManage, isAdmin, profile, user } = useAuth();
+  const { canManage, isAdmin, profile, user, hasPermission } = useAuth();
+  const allowed = canManage || hasPermission("send_notifications");
   const { names: deptNames } = useDepartments();
 
   const [title, setTitle] = useState("");
@@ -61,7 +62,7 @@ function NotificationsAdmin() {
     };
   }, []);
 
-  if (!canManage) return <Navigate to="/app/dashboard" />;
+  if (!allowed) return <Navigate to="/app/dashboard" />;
 
   const submit = async () => {
     if (!title.trim() || !message.trim()) {
