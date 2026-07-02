@@ -121,13 +121,7 @@ export const adminUpdateEmail = createServerFn({ method: "POST" })
       if (targetAdmin) {
         throw new Error("Forbidden: cannot modify an admin account");
       }
-      const { data: sameDept, error: sdErr } = await context.supabase
-        .rpc("same_department_check" as never, {
-          _a: context.userId,
-          _b: data.user_id,
-        } as never);
-      if (sdErr || !sameDept) {
-        // Fallback: compare via profiles + user_departments using admin client (RLS-safe read).
+      {
         const [{ data: callerDepts }, { data: targetDepts }] = await Promise.all([
           supabaseAdmin.from("user_departments").select("department").eq("user_id", context.userId),
           supabaseAdmin.from("user_departments").select("department").eq("user_id", data.user_id),
