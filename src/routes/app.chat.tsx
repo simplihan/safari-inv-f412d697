@@ -494,16 +494,21 @@ function Chat() {
                         active?.id === p.id && "bg-accent/60",
                       )}
                     >
-                      <Avatar className="h-11 w-11">
-                        <AvatarImage src={p.profile_image ?? undefined} />
-                        <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
-                          {p.full_name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .slice(0, 2)
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar className="h-11 w-11">
+                          <AvatarImage src={p.profile_image ?? undefined} />
+                          <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
+                            {p.full_name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .slice(0, 2)
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        {presenceLabel(p.last_seen_at, onlineIds, p.id).online && (
+                          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-card" />
+                        )}
+                      </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-sm font-medium truncate">{p.full_name}</p>
@@ -513,6 +518,16 @@ function Chat() {
                             </span>
                           )}
                         </div>
+                        <p className="text-[11px] text-muted-foreground leading-tight">
+                          {(() => {
+                            const pl = presenceLabel(p.last_seen_at, onlineIds, p.id);
+                            return pl.online ? (
+                              <span className="text-emerald-600 font-medium">Online</span>
+                            ) : (
+                              <span>{pl.text}</span>
+                            );
+                          })()}
+                        </p>
                         <div className="flex items-center justify-between gap-2 mt-0.5">
                           <p
                             className={cn(
