@@ -466,6 +466,7 @@ export type Database = {
       }
       user_permissions: {
         Row: {
+          access_level: Database["public"]["Enums"]["permission_level"]
           created_at: string
           granted_by: string | null
           id: string
@@ -475,6 +476,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          access_level?: Database["public"]["Enums"]["permission_level"]
           created_at?: string
           granted_by?: string | null
           id?: string
@@ -484,6 +486,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          access_level?: Database["public"]["Enums"]["permission_level"]
           created_at?: string
           granted_by?: string | null
           id?: string
@@ -529,11 +532,19 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
       get_email_by_sgc: { Args: { _sgc: string }; Returns: string }
+      has_edit_permission: {
+        Args: {
+          _perm: Database["public"]["Enums"]["app_permission"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_global_permission: {
         Args: {
           _perm: Database["public"]["Enums"]["app_permission"]
@@ -603,6 +614,7 @@ export type Database = {
         | "Shopping"
         | "Meeting"
         | "Other"
+      permission_level: "view" | "edit"
       permission_scope: "department" | "global"
       user_status: "pending" | "approved" | "rejected"
     }
@@ -752,6 +764,7 @@ export const Constants = {
         "Meeting",
         "Other",
       ],
+      permission_level: ["view", "edit"],
       permission_scope: ["department", "global"],
       user_status: ["pending", "approved", "rejected"],
     },

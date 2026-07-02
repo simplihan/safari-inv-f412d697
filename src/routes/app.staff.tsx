@@ -400,7 +400,7 @@ const PERMISSION_LABELS: { key: string; label: string; desc: string }[] = [
 ];
 
 function PermissionsDialog({ user, onClose }: { user: any; onClose: () => void }) {
-  const [rows, setRows] = useState<{ permission: string; scope: "department" | "global" }[]>([]);
+  const [rows, setRows] = useState<{ permission: string; scope: "department" | "global"; access_level: "view" | "edit" }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -408,9 +408,13 @@ function PermissionsDialog({ user, onClose }: { user: any; onClose: () => void }
     (async () => {
       const { data } = await supabase
         .from("user_permissions")
-        .select("permission, scope")
+        .select("permission, scope, access_level")
         .eq("user_id", user.id);
-      setRows(((data as any) ?? []).map((r: any) => ({ permission: r.permission, scope: r.scope })));
+      setRows(((data as any) ?? []).map((r: any) => ({
+        permission: r.permission,
+        scope: r.scope,
+        access_level: (r.access_level ?? "view") as "view" | "edit",
+      })));
       setLoading(false);
     })();
   }, [user.id]);
@@ -420,11 +424,14 @@ function PermissionsDialog({ user, onClose }: { user: any; onClose: () => void }
     setRows((prev) =>
       prev.some((r) => r.permission === k)
         ? prev.filter((r) => r.permission !== k)
-        : [...prev, { permission: k, scope: k === "cross_department" ? "global" : "department" }]
+        : [...prev, { permission: k, scope: k === "cross_department" ? "global" : "department", access_level: "view" }]
     );
   };
   const setScope = (k: string, scope: "department" | "global") => {
     setRows((prev) => prev.map((r) => (r.permission === k ? { ...r, scope } : r)));
+  };
+  const setLevel = (k: string, access_level: "view" | "edit") => {
+    setRows((prev) => prev.map((r) => (r.permission === k ? { ...r, access_level } : r)));
   };
 
   const save = async () => {
@@ -437,6 +444,7 @@ function PermissionsDialog({ user, onClose }: { user: any; onClose: () => void }
           user_id: user.id,
           permission: r.permission as any,
           scope: r.scope as any,
+          access_level: r.access_level as any,
         }));
         const { error } = await supabase.from("user_permissions").insert(payload);
         if (error) throw error;
@@ -477,16 +485,28 @@ function PermissionsDialog({ user, onClose }: { user: any; onClose: () => void }
                     <p className="text-xs text-muted-foreground">{p.desc}</p>
                   </div>
                   {active && p.key !== "cross_department" && (
-                    <Select
-                      value={active.scope}
-                      onValueChange={(v: "department" | "global") => setScope(p.key, v)}
-                    >
-                      <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="department">Department</SelectItem>
-                        <SelectItem value="global">Global</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                      <Select
+                        value={active.access_level}
+                        onValueChange={(v: "view" | "edit") => setLevel(p.key, v)}
+                      >
+                        <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="view">View</SelectItem>
+                          <SelectItem value="edit">Edit</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={active.scope}
+                        onValueChange={(v: "department" | "global") => setScope(p.key, v)}
+                      >
+                        <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="department">Department</SelectItem>
+                          <SelectItem value="global">Global</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   )}
                 </div>
               );

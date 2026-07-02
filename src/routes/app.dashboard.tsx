@@ -116,12 +116,19 @@ function Dashboard() {
     setSubmitting(true);
     const inTime = new Date();
     const dur = Math.max(1, Math.round((inTime.getTime() - new Date(active.out_time).getTime()) / 60000));
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("break_logs")
       .update({ in_time: inTime.toISOString(), duration_minutes: dur, status: "in" })
-      .eq("id", active.id);
+      .eq("id", active.id)
+      .eq("status", "out")
+      .select("id");
     setSubmitting(false);
     if (error) return toast.error(friendlyError(error));
+    if (!updated || updated.length === 0) {
+      toast.info("This break was auto-closed after 2 hours.");
+      await load();
+      return;
+    }
     toast.success(`Welcome back — ${dur}m out`);
   };
 
