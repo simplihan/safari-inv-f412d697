@@ -99,7 +99,55 @@ export const adminUpdateEmail = createServerFn({ method: "POST" })
     }).parse(data)
   )
   .handler(async ({ data, context }) => {
-    await requireAdminOrManager(context.supabase, context.userId);
+    // Verify caller is admin, or a manager acting on a same-department non-admin user.
+    const { data: callerRoles } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const roles = (callerRoles ?? []).map((r: { role: string }) => r.role);
+    const isAdmin = roles.includes("admin");
+    const isManager = roles.includes("manager");
+    if (!isAdmin && !isManager) {
+      throw new Error("Forbidden: admin or manager role required");
+    }
+    if (!isAdmin) {
+      // Manager: block targeting admins, and enforce same-department scope.
+      const { data: targetAdmin } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user_id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (targetAdmin) {
+        throw new Error("Forbidden: cannot modify an admin account");
+      }
+      {
+        const [{ data: callerDepts }, { data: targetDepts }] = await Promise.all([
+          supabaseAdmin.from("user_departments").select("department").eq("user_id", context.userId),
+          supabaseAdmin.from("user_departments").select("department").eq("user_id", data.user_id),
+        ]);
+        const [{ data: callerProfile }, { data: targetProfile }] = await Promise.all([
+          supabaseAdmin.from("profiles").select("department").eq("id", context.userId).maybeSingle(),
+          supabaseAdmin.from("profiles").select("department").eq("id", data.user_id).maybeSingle(),
+        ]);
+        const callerSet = new Set<string>(
+          [
+            ...((callerDepts ?? []) as { department: string }[]).map((d) => d.department),
+            callerProfile?.department,
+          ].filter(Boolean) as string[]
+        );
+        const targetSet = new Set<string>(
+          [
+            ...((targetDepts ?? []) as { department: string }[]).map((d) => d.department),
+            targetProfile?.department,
+          ].filter(Boolean) as string[]
+        );
+        const overlap = [...callerSet].some((d) => targetSet.has(d));
+        if (!overlap) {
+          throw new Error("Forbidden: target user is not in your department");
+        }
+      }
+    }
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
       email: data.email,
       email_confirm: true,
