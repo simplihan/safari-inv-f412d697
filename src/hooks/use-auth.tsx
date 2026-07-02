@@ -17,10 +17,12 @@ export type AppPermission =
   | "cross_department";
 
 export type PermissionScope = "department" | "global";
+export type PermissionLevel = "view" | "edit";
 
 export interface PermissionGrant {
   permission: AppPermission;
   scope: PermissionScope;
+  access_level: PermissionLevel;
 }
 
 export interface Profile {
@@ -51,6 +53,7 @@ interface AuthCtx {
   canManage: boolean;
   hasPermission: (p: AppPermission) => boolean;
   hasGlobalPermission: (p: AppPermission) => boolean;
+  hasEditPermission: (p: AppPermission) => boolean;
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -68,11 +71,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [{ data: prof }, { data: roleRows }, { data: permRows }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", userId),
-      supabase.from("user_permissions").select("permission, scope").eq("user_id", userId),
+      supabase.from("user_permissions").select("permission, scope, access_level").eq("user_id", userId),
     ]);
     setProfile((prof as Profile) ?? null);
     setRoles(((roleRows as { role: AppRole }[]) ?? []).map((r) => r.role));
-    setPermissions(((permRows as PermissionGrant[]) ?? []));
+    setPermissions(((permRows as any[]) ?? []).map((r) => ({
+      permission: r.permission,
+      scope: r.scope,
+      access_level: (r.access_level ?? "view") as PermissionLevel,
+    })));
   };
 
   useEffect(() => {
@@ -130,6 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin || permissions.some((g) => g.permission === p);
   const hasGlobalPermission = (p: AppPermission) =>
     isAdmin || permissions.some((g) => g.permission === p && g.scope === "global");
+  const hasEditPermission = (p: AppPermission) =>
+    isAdmin || permissions.some((g) => g.permission === p && g.access_level === "edit");
 
   return (
     <Ctx.Provider
@@ -149,6 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         canManage: isAdmin || isManager || isSupervisor,
         hasPermission,
         hasGlobalPermission,
+        hasEditPermission,
       }}
     >
       {children}
