@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
 
 export type NotificationPriority = "info" | "warning" | "urgent";
 export type NotificationScope = "global" | "department";
@@ -29,7 +30,7 @@ interface Ctx {
 const NotifCtx = createContext<Ctx | null>(null);
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -57,15 +58,24 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     load();
     if (!user?.id) return;
+    const channelName = `notifications-watch:${user.id}`;
     const ch = supabase
-      .channel("notifications-watch")
-      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, load)
+      .channel(channelName)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, (payload) => {
+        const n = payload.new as AppNotification;
+        // Optimistic prepend so the bell + popup update instantly
+        setNotifications((prev) => (prev.some((x) => x.id === n.id) ? prev : [n, ...prev]));
+        // Live toast so a new broadcast is always visible even if the popup is dismissed
+        toast(n.title, { description: n.message });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications" }, load)
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "notifications" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "notification_reads", filter: `user_id=eq.${user.id}` }, load)
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [user?.id, load, profile?.department]);
+  }, [user?.id, load]);
 
   const markRead = useCallback(
     async (id: string) => {
