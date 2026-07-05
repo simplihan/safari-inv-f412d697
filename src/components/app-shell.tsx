@@ -37,6 +37,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [chatEnabled, setChatEnabled] = useState(true);
   const [unreadTotal, setUnreadTotal] = useState(0);
 
+  // App-wide presence heartbeat: keep last_seen_at fresh for any signed-in user
+  useEffect(() => {
+    if (!user?.id) return;
+    const ping = () => { supabase.rpc("touch_last_seen"); };
+    ping();
+    const iv = setInterval(ping, 30_000);
+    const onFocus = () => ping();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [user?.id]);
+
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
