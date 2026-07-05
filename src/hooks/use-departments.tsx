@@ -11,10 +11,7 @@ export function useDepartments() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
-      .from("departments")
-      .select("id, name")
-      .order("name");
+    const { data } = await supabase.rpc("list_departments_public");
     setDepartments((data as Department[]) ?? []);
     setLoading(false);
   }, []);
