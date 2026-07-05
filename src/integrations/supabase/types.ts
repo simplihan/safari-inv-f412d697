@@ -559,6 +559,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_departments_public: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       list_directory: {
         Args: never
         Returns: {
