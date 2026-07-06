@@ -65,7 +65,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     const desktopNotification = new Notification(notification.title, {
       body: notification.message,
       tag: notification.id,
-      renotify: true,
     });
 
     desktopNotification.onclick = () => {

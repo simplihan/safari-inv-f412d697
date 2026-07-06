@@ -16,7 +16,7 @@ const priorityStyles: Record<NotificationPriority, { badge: string; ring: string
 };
 
 export function NotificationsBell() {
-  const { notifications, unread, readIds, markRead, markAllRead } = useNotifications();
+  const { notifications, unread, readIds, desktopPermission, requestDesktopPermission, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const [popupId, setPopupId] = useState<string | null>(null);
 
@@ -53,11 +53,23 @@ export function NotificationsBell() {
                 {unread.length > 0 ? `${unread.length} unread` : "All caught up"}
               </p>
             </div>
-            {unread.length > 0 && (
-              <Button size="sm" variant="ghost" onClick={() => markAllRead()}>
-                Mark all read
-              </Button>
-            )}
+            <div className="flex items-center gap-1">
+              {desktopPermission === "default" && (
+                <Button size="sm" variant="outline" onClick={() => requestDesktopPermission()}>
+                  Enable desktop alerts
+                </Button>
+              )}
+              {desktopPermission === "denied" && (
+                <Badge variant="outline" className="text-[10px]">
+                  Desktop alerts blocked
+                </Badge>
+              )}
+              {unread.length > 0 && (
+                <Button size="sm" variant="ghost" onClick={() => markAllRead()}>
+                  Mark all read
+                </Button>
+              )}
+            </div>
           </div>
           <ScrollArea className="max-h-[420px]">
             {notifications.length === 0 ? (
