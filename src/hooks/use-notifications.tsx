@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode, useMemo } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -22,6 +22,8 @@ interface Ctx {
   readIds: Set<string>;
   unread: AppNotification[];
   loading: boolean;
+  desktopPermission: NotificationPermission | "unsupported";
+  requestDesktopPermission: () => Promise<NotificationPermission | "unsupported">;
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
   reload: () => Promise<void>;
@@ -34,6 +36,43 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [desktopPermission, setDesktopPermission] = useState<NotificationPermission | "unsupported">("default");
+  const desktopPermissionRef = useRef<NotificationPermission | "unsupported">("default");
+
+  useEffect(() => {
+    const permission = typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported";
+    setDesktopPermission(permission);
+    desktopPermissionRef.current = permission;
+  }, []);
+
+  const requestDesktopPermission = useCallback(async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      setDesktopPermission("unsupported");
+      desktopPermissionRef.current = "unsupported";
+      return "unsupported";
+    }
+
+    const permission = await Notification.requestPermission();
+    setDesktopPermission(permission);
+    desktopPermissionRef.current = permission;
+    return permission;
+  }, []);
+
+  const showDesktopNotification = useCallback((notification: AppNotification) => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (desktopPermissionRef.current !== "granted") return;
+
+    const desktopNotification = new Notification(notification.title, {
+      body: notification.message,
+      tag: notification.id,
+      renotify: true,
+    });
+
+    desktopNotification.onclick = () => {
+      window.focus();
+      desktopNotification.close();
+    };
+  }, []);
 
   const load = useCallback(async () => {
     if (!user?.id) {
@@ -67,6 +106,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         setNotifications((prev) => (prev.some((x) => x.id === n.id) ? prev : [n, ...prev]));
         // Live toast so a new broadcast is always visible even if the popup is dismissed
         toast(n.title, { description: n.message });
+        showDesktopNotification(n);
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications" }, load)
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "notifications" }, load)
@@ -75,7 +115,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [user?.id, load]);
+  }, [user?.id, load, showDesktopNotification]);
 
   const markRead = useCallback(
     async (id: string) => {
@@ -103,7 +143,19 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const unread = useMemo(() => notifications.filter((n) => !readIds.has(n.id)), [notifications, readIds]);
 
   return (
-    <NotifCtx.Provider value={{ notifications, readIds, unread, loading, markRead, markAllRead, reload: load }}>
+    <NotifCtx.Provider
+      value={{
+        notifications,
+        readIds,
+        unread,
+        loading,
+        desktopPermission,
+        requestDesktopPermission,
+        markRead,
+        markAllRead,
+        reload: load,
+      }}
+    >
       {children}
     </NotifCtx.Provider>
   );
