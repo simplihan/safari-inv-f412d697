@@ -31,7 +31,7 @@ type Row = {
 };
 
 function Common() {
-  const { user, profile, canManage } = useAuth();
+  const { user, profile, canManage, isAdmin } = useAuth();
   const adminIds = useAdminIds();
   const { ids: visibleIds, ready: visibleReady } = useVisibleIds();
   const [rows, setRows] = useState<Row[]>([]);
@@ -161,11 +161,12 @@ function Common() {
       perUser.set(p.id, { ...p, breakMin: breakMinFor(p.id) });
     });
     const list = Array.from(perUser.values());
-    const top = [...list].sort((a, b) => a.breakMin - b.breakMin).slice(0, 5);
-    const most = [...list].sort((a, b) => b.breakMin - a.breakMin).slice(0, 5);
+    const limit = isAdmin ? 10 : 5;
+    const top = [...list].sort((a, b) => a.breakMin - b.breakMin).slice(0, limit);
+    const most = [...list].sort((a, b) => b.breakMin - a.breakMin).slice(0, limit);
     return { top, most };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [people, chartRows, adminIds, chartDuty, tick]);
+  }, [people, chartRows, adminIds, chartDuty, tick, isAdmin]);
 
   return (
     <div className="space-y-6">
