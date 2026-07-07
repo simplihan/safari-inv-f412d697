@@ -424,7 +424,7 @@ function PermissionsDialog({ user, onClose }: { user: any; onClose: () => void }
     setRows((prev) =>
       prev.some((r) => r.permission === k)
         ? prev.filter((r) => r.permission !== k)
-        : [...prev, { permission: k, scope: k === "cross_department" ? "global" : "department", access_level: "view" }]
+        : [...prev, { permission: k, scope: "global", access_level: "view" }]
     );
   };
   const setScope = (k: string, scope: "department" | "global") => {
@@ -439,8 +439,15 @@ function PermissionsDialog({ user, onClose }: { user: any; onClose: () => void }
     try {
       const { error: delErr } = await supabase.from("user_permissions").delete().eq("user_id", user.id);
       if (delErr) throw delErr;
-      if (rows.length) {
-        const payload = rows.map((r) => ({
+      // Auto-grant cross_department (global) whenever any other permission is granted,
+      // so "view" means view all users and "edit" means edit all users regardless of department.
+      const effective = [...rows];
+      const hasNonCross = effective.some((r) => r.permission !== "cross_department");
+      if (hasNonCross && !effective.some((r) => r.permission === "cross_department")) {
+        effective.push({ permission: "cross_department", scope: "global", access_level: "view" });
+      }
+      if (effective.length) {
+        const payload = effective.map((r) => ({
           user_id: user.id,
           permission: r.permission as any,
           scope: r.scope as any,
