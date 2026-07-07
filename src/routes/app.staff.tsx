@@ -424,7 +424,7 @@ function PermissionsDialog({ user, onClose }: { user: any; onClose: () => void }
     setRows((prev) =>
       prev.some((r) => r.permission === k)
         ? prev.filter((r) => r.permission !== k)
-        : [...prev, { permission: k, scope: k === "cross_department" ? "global" : "department", access_level: "view" }]
+        : [...prev, { permission: k, scope: "global", access_level: "view" }]
     );
   };
   const setScope = (k: string, scope: "department" | "global") => {
