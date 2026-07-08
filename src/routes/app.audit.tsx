@@ -77,26 +77,21 @@ function AuditPage() {
         <CardContent className="overflow-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-muted-foreground">
-              <tr><th className="py-2">Out time</th><th>In time</th><th>User</th><th>Reason</th><th>Duration</th><th>Status</th><th>Remarks</th></tr>
+              <tr><th className="py-2">User</th><th>Reason</th><th>Out time</th><th>In time</th><th>Duration</th><th>Remarks</th></tr>
             </thead>
             <tbody>
               {filtered.map((r) => (
                 <tr key={r.id} className="border-t border-border">
-                  <td className="py-2 text-xs whitespace-nowrap">{fmtDateTime(r.out_time)}</td>
-                  <td className="text-xs whitespace-nowrap">{fmtDateTime(r.in_time)}</td>
-                  <td>{profiles[r.user_id]?.full_name ?? <span className="text-muted-foreground">unknown</span>}</td>
+                  <td className="py-2">{profiles[r.user_id]?.full_name ?? <span className="text-muted-foreground">unknown</span>}</td>
                   <td><Badge variant="secondary">{r.reason}</Badge></td>
+                  <td className="text-xs whitespace-nowrap">{fmtDateTime(r.out_time)}</td>
+                  <td className="text-xs whitespace-nowrap">{fmtDateTime(r.in_time)}</td>
                   <td className="text-xs">{r.duration_minutes != null ? fmtDuration(r.duration_minutes) : "—"}</td>
-                  <td>
-                    <Badge variant="outline" className={
-                      r.status === "out" ? "border-warning/40" : "border-success/40"
-                    }>{r.status === "out" ? "Live" : "Ended"}</Badge>
-                  </td>
                   <td className="text-xs text-muted-foreground truncate max-w-[24ch]">{r.remarks ?? ""}</td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">No activities</td></tr>
+                <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No activities</td></tr>
               )}
             </tbody>
           </table>
