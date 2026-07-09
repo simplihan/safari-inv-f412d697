@@ -7,7 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fmtDateTime } from "@/lib/format";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/audit")({ component: AuditPage });
 
@@ -58,6 +71,16 @@ function AuditPage() {
 
   if (!allowed) return <Navigate to="/app/dashboard" />;
 
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("audit_logs").delete().eq("id", id);
+    if (error) {
+      toast.error("Failed to delete entry");
+      return;
+    }
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    toast.success("Entry deleted");
+  };
+
   const filtered = rows.filter((r) => {
     if (action !== "all" && r.action !== action) return false;
     if (q) {
@@ -97,7 +120,7 @@ function AuditPage() {
         <CardContent className="overflow-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-muted-foreground">
-              <tr><th className="py-2">Profile</th><th>Changed by</th><th>Time</th><th>Changes</th></tr>
+              <tr><th className="py-2">Profile</th><th>Changed by</th><th>Time</th><th>Changes</th>{isAdmin && <th className="w-10"></th>}</tr>
             </thead>
             <tbody>
               {filtered.map((r) => (
@@ -116,10 +139,31 @@ function AuditPage() {
                   <td className="text-xs">
                     <ChangeSummary payload={r.payload} />
                   </td>
+                  {isAdmin && (
+                    <td className="text-right">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete audit entry?</AlertDialogTitle>
+                            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(r.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </td>
+                  )}
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={4} className="py-8 text-center text-muted-foreground">No profile changes</td></tr>
+                <tr><td colSpan={isAdmin ? 5 : 4} className="py-8 text-center text-muted-foreground">No profile changes</td></tr>
               )}
             </tbody>
           </table>
