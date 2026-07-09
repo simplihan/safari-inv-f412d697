@@ -53,6 +53,7 @@ type Person = {
   department: string | null;
   profile_image: string | null;
   last_seen_at: string | null;
+  is_online?: boolean;
 };
 type Msg = {
   id: string;
@@ -91,8 +92,6 @@ function presenceLabel(iso: string | null, onlineIds: Set<string>, id: string): 
   if (!iso) return { online: false, text: "Offline" };
   const d = new Date(iso);
   const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  if (diffMs < 60_000) return { online: true, text: "Online" };
   const sameDay = d.toDateString() === now.toDateString();
   if (sameDay)
     return {
@@ -202,11 +201,15 @@ function Chat() {
   useEffect(() => {
     (async () => {
       const { data } = await supabase.rpc("list_directory");
-      setPeople(
-        ((data ?? []) as any[])
-          .filter((p) => p.id !== user?.id)
-          .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? "")),
-      );
+      const list = ((data ?? []) as any[])
+        .filter((p) => p.id !== user?.id)
+        .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? ""));
+      setPeople(list);
+      setOnlineIds((prev) => {
+        const next = new Set(prev);
+        list.forEach((p: any) => { if (p.is_online) next.add(p.id); });
+        return next;
+      });
     })();
   }, [user?.id]);
 
@@ -248,8 +251,19 @@ function Chat() {
     if (!user) return;
     const refresh = async () => {
       const { data } = await supabase.rpc("list_directory");
-      const map = new Map<string, string | null>(((data ?? []) as any[]).map((p) => [p.id, p.last_seen_at]));
-      setPeople((prev) => prev.map((p) => ({ ...p, last_seen_at: map.get(p.id) ?? p.last_seen_at })));
+      const rows = (data ?? []) as any[];
+      const map = new Map<string, { last_seen_at: string | null; is_online: boolean }>(
+        rows.map((p) => [p.id, { last_seen_at: p.last_seen_at, is_online: !!p.is_online }]),
+      );
+      setPeople((prev) => prev.map((p) => {
+        const r = map.get(p.id);
+        return r ? { ...p, last_seen_at: r.last_seen_at ?? p.last_seen_at, is_online: r.is_online } : p;
+      }));
+      setOnlineIds((prev) => {
+        const next = new Set(prev);
+        rows.forEach((p) => { if (p.is_online) next.add(p.id); });
+        return next;
+      });
     };
     const iv = setInterval(refresh, 45_000);
     return () => clearInterval(iv);
