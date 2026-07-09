@@ -87,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       if (s?.user) {
         setTimeout(() => loadProfile(s.user.id), 0);
+        setTimeout(() => { supabase.rpc("set_online" as any); }, 0);
         // 10h auto-logout
         const loginAt = Number(localStorage.getItem("loginAt") || 0);
         if (!loginAt) localStorage.setItem("loginAt", String(Date.now()));
@@ -122,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     localStorage.removeItem("loginAt");
+    try { await supabase.rpc("set_offline" as any); } catch { /* ignore */ }
     await supabase.auth.signOut();
   };
 
