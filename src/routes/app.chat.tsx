@@ -91,8 +91,6 @@ function presenceLabel(iso: string | null, onlineIds: Set<string>, id: string): 
   if (!iso) return { online: false, text: "Offline" };
   const d = new Date(iso);
   const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  if (diffMs < 60_000) return { online: true, text: "Online" };
   const sameDay = d.toDateString() === now.toDateString();
   if (sameDay)
     return {
