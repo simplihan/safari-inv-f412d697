@@ -24,14 +24,7 @@ function Pending() {
 
   useEffect(() => {
     load();
-    const ch = supabase
-      .channel("pending")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "profiles" }, () => load())
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "profiles" }, () => load())
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: "status=eq.pending" }, () => load())
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: "status=eq.approved" }, () => load())
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: "status=eq.rejected" }, () => load())
-      .subscribe();
+    const ch = supabase.channel("pending").on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => load()).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
 

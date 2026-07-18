@@ -180,8 +180,7 @@ function Monitoring() {
     const ch = supabase
       .channel("mon-all")
       .on("postgres_changes", { event: "*", schema: "public", table: "break_logs" }, () => load())
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "profiles" }, () => load())
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "profiles" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [visibleIds]);

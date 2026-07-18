@@ -381,7 +381,6 @@ export type Database = {
           email: string
           full_name: string
           id: string
-          is_online: boolean
           last_seen_at: string | null
           mobile: string | null
           notif_enabled: boolean
@@ -396,7 +395,6 @@ export type Database = {
           email: string
           full_name: string
           id: string
-          is_online?: boolean
           last_seen_at?: string | null
           mobile?: string | null
           notif_enabled?: boolean
@@ -411,7 +409,6 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
-          is_online?: boolean
           last_seen_at?: string | null
           mobile?: string | null
           notif_enabled?: boolean
@@ -575,7 +572,6 @@ export type Database = {
           department: string
           full_name: string
           id: string
-          is_online: boolean
           last_seen_at: string
           profile_image: string
           status: Database["public"]["Enums"]["user_status"]
@@ -604,8 +600,6 @@ export type Database = {
           read_ct: number
         }[]
       }
-      set_offline: { Args: never; Returns: undefined }
-      set_online: { Args: never; Returns: undefined }
       touch_last_seen: { Args: never; Returns: undefined }
     }
     Enums: {
