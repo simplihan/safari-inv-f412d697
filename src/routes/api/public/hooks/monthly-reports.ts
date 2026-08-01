@@ -53,7 +53,7 @@ export const Route = createFileRoute("/api/public/hooks/monthly-reports")({
         // Departments with email enabled
         const { data: depts, error: deptErr } = await sb
           .from("departments")
-          .select("id, name, monthly_report_email")
+          .select("id, name, monthly_report_email, monthly_report_subject")
           .eq("monthly_report_email", true);
         if (deptErr) return Response.json({ error: deptErr.message }, { status: 500 });
 
