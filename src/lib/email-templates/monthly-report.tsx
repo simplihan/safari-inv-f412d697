@@ -19,16 +19,19 @@ const MonthlyReport = ({
   siteName = 'Pulse Safari',
   department = 'your department',
   monthLabel = 'last month',
+  subject,
   totalSessions = 0,
   totalMinutes = 0,
   topStaff = [],
-}: Props) => (
+}: Props) => {
+  const heading = subject || `${department} — ${monthLabel}`
+  return (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>{department} — {monthLabel} activity summary</Preview>
+    <Preview>{heading}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>{department} — {monthLabel}</Heading>
+        <Heading style={h1}>{heading}</Heading>
         <Text style={text}>
           Here's your {siteName} monthly activity summary.
         </Text>
