@@ -85,6 +85,7 @@ export type Database = {
           created_at: string
           id: string
           monthly_report_email: boolean
+          monthly_report_recipients: string | null
           monthly_report_subject: string | null
           name: string
           updated_at: string
@@ -93,6 +94,7 @@ export type Database = {
           created_at?: string
           id?: string
           monthly_report_email?: boolean
+          monthly_report_recipients?: string | null
           monthly_report_subject?: string | null
           name: string
           updated_at?: string
@@ -101,6 +103,7 @@ export type Database = {
           created_at?: string
           id?: string
           monthly_report_email?: boolean
+          monthly_report_recipients?: string | null
           monthly_report_subject?: string | null
           name?: string
           updated_at?: string
