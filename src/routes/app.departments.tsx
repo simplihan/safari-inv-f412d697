@@ -151,24 +151,37 @@ function DepartmentsPage() {
                 <Building2 className="h-4 w-4 text-primary-foreground" />
               </div>
               {editingId === d.id ? (
-                <>
+                <div className="flex-1 grid gap-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      autoFocus
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveEdit();
+                        if (e.key === "Escape") setEditingId(null);
+                      }}
+                      className="flex-1"
+                      placeholder="Department name"
+                    />
+                    <Button size="icon" variant="ghost" onClick={saveEdit} disabled={busy}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <Input
-                    autoFocus
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
+                    value={editingSubject}
+                    onChange={(e) => setEditingSubject(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") saveEdit();
                       if (e.key === "Escape") setEditingId(null);
                     }}
-                    className="flex-1"
+                    placeholder="Email subject (optional). Leave blank for default: Department — Month activity report"
+                    className="text-sm"
                   />
-                  <Button size="icon" variant="ghost" onClick={saveEdit} disabled={busy}>
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </>
+                </div>
               ) : (
                 <>
                   <p className="font-medium flex-1">{d.name}</p>
