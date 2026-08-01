@@ -59,13 +59,22 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        // Approval gate: only approved profiles can trigger app emails.
+        // Authorization gate: only approved admins may trigger app emails.
+        // Approved-but-non-admin accounts previously made this an open relay
+        // (arbitrary recipient + arbitrary caller-supplied content).
         const { data: callerProfile, error: profErr } = await supabase
           .from('profiles')
           .select('status')
           .eq('id', user.id)
           .maybeSingle()
         if (profErr || !callerProfile || callerProfile.status !== 'approved') {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        const { data: callerRoles, error: roleErr } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+        if (roleErr || !(callerRoles ?? []).some((r: any) => r.role === 'admin')) {
           return Response.json({ error: 'Forbidden' }, { status: 403 })
         }
 
@@ -121,6 +130,92 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
             },
             { status: 400 }
           )
+        }
+
+        // Recipient allow-list: only addresses that already exist in the app
+        // (staff profiles) or that an admin configured as a department report
+        // recipient may be emailed. Blocks use as an open relay to any inbox.
+        if (!template.to) {
+          const candidate = effectiveRecipient.toLowerCase()
+          const { data: profileMatch } = await supabase
+            .from('profiles')
+            .select('id')
+            .ilike('email', candidate)
+            .maybeSingle()
+          let allowed = Boolean(profileMatch)
+          if (!allowed) {
+            const { data: deptRecipients } = await supabase
+              .from('departments')
+              .select('monthly_report_recipients')
+            allowed = (deptRecipients ?? []).some((d: any) =>
+              String(d.monthly_report_recipients ?? '')
+                .split(/[,;\s]+/)
+                .map((e: string) => e.trim().toLowerCase())
+                .includes(candidate)
+            )
+          }
+          if (!allowed) {
+            return Response.json({ error: 'Recipient not allowed' }, { status: 403 })
+          }
+        }
+
+        // Report content must come from the database, never from the caller.
+        if (templateName === 'monthly-report') {
+          const deptName = String(templateData['department'] ?? '')
+          const { data: dept } = await supabase
+            .from('departments')
+            .select('name, monthly_report_subject')
+            .eq('name', deptName)
+            .maybeSingle()
+          if (!dept) {
+            return Response.json({ error: 'Unknown department' }, { status: 400 })
+          }
+          const now = new Date()
+          const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
+          const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+          const monthLabel = start.toLocaleString('en-US', {
+            month: 'long',
+            year: 'numeric',
+            timeZone: 'UTC',
+          })
+          const { data: profs } = await supabase
+            .from('profiles')
+            .select('id, full_name, department')
+            .eq('department', dept.name)
+          const memberIds = (profs ?? []).map((p: any) => p.id)
+          const { data: logs } = memberIds.length
+            ? await supabase
+                .from('break_logs')
+                .select('user_id, duration_minutes, out_time')
+                .in('user_id', memberIds)
+                .gte('out_time', start.toISOString())
+                .lt('out_time', end.toISOString())
+            : { data: [] as any[] }
+          const byUser: Record<string, { sessions: number; minutes: number }> = {}
+          ;(logs ?? []).forEach((r: any) => {
+            const k = r.user_id
+            byUser[k] = byUser[k] ?? { sessions: 0, minutes: 0 }
+            byUser[k].sessions += 1
+            byUser[k].minutes += r.duration_minutes ?? 0
+          })
+          const nameById: Record<string, string> = Object.fromEntries(
+            (profs ?? []).map((p: any) => [p.id, p.full_name ?? '—'])
+          )
+          templateData = {
+            siteName: 'Pulse Safari',
+            department: dept.name,
+            monthLabel,
+            subject: dept.monthly_report_subject || undefined,
+            totalSessions: (logs ?? []).length,
+            totalMinutes: (logs ?? []).reduce(
+              (s: number, r: any) => s + (r.duration_minutes ?? 0),
+              0
+            ),
+            topStaff: Object.entries(byUser)
+              .map(([id, v]) => ({ name: nameById[id] ?? '—', ...v }))
+              .sort((a, b) => b.minutes - a.minutes)
+              .slice(0, 5),
+          }
         }
 
         // 2. Check suppression list (fail-closed: if we can't verify, don't send)
