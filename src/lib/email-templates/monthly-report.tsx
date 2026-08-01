@@ -65,7 +65,7 @@ export default MonthlyReport
 export const template = {
   component: MonthlyReport,
   subject: (data: Record<string, any>) =>
-    `${data.department ?? 'Department'} — ${data.monthLabel ?? 'monthly'} activity report`,
+    data.subject || `${data.department ?? 'Department'} — ${data.monthLabel ?? 'monthly'} activity report`,
   displayName: 'Monthly department report',
   previewData: {
     siteName: 'Pulse Safari',
