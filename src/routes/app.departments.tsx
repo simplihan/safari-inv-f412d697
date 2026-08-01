@@ -42,18 +42,25 @@ function DepartmentsPage() {
     if (!isAdmin) return;
     supabase
       .from("departments")
-      .select("id, name, monthly_report_email, monthly_report_subject, monthly_report_recipients")
+      .select("id, name, monthly_report_email, monthly_report_subject")
       .then(({ data }) => {
         const map: Record<string, boolean> = {};
         const subj: Record<string, string> = {};
-        const rcpt: Record<string, string> = {};
         (data ?? []).forEach((d: any) => {
           map[d.id] = !!d.monthly_report_email;
           subj[d.id] = d.monthly_report_subject || "";
-          rcpt[d.id] = d.monthly_report_recipients || "";
         });
         setEmailFlags(map);
         setSubjects(subj);
+      });
+    // Recipient emails are admin-only and read through a secured function
+    (supabase as any)
+      .rpc("list_department_report_recipients")
+      .then(({ data }: { data: any[] | null }) => {
+        const rcpt: Record<string, string> = {};
+        (data ?? []).forEach((d: any) => {
+          rcpt[d.id] = d.monthly_report_recipients || "";
+        });
         setRecipients(rcpt);
       });
   }, [isAdmin, departments.length]);
