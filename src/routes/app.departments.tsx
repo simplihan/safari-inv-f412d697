@@ -84,6 +84,7 @@ function DepartmentsPage() {
   const startEdit = (id: string, name: string) => {
     setEditingId(id);
     setEditingName(name);
+    setEditingSubject(subjects[id] || "");
   };
 
   const saveEdit = async () => {
@@ -91,10 +92,15 @@ function DepartmentsPage() {
     const name = editingName.trim();
     if (!name) return;
     setBusy(true);
-    const { error } = await supabase.from("departments").update({ name }).eq("id", editingId);
+    const subject = editingSubject.trim() || null;
+    const { error } = await supabase
+      .from("departments")
+      .update({ name, monthly_report_subject: subject })
+      .eq("id", editingId);
     setBusy(false);
     if (error) return toast.error(friendlyError(error));
-    toast.success("Renamed (members & chat settings updated)");
+    setSubjects((s) => ({ ...s, [editingId]: editingSubject.trim() }));
+    toast.success("Department updated");
     setEditingId(null);
     reload();
   };
