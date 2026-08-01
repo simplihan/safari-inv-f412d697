@@ -30,6 +30,8 @@ function DepartmentsPage() {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [editingSubject, setEditingSubject] = useState("");
+  const [subjects, setSubjects] = useState<Record<string, string>>({});
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [emailFlags, setEmailFlags] = useState<Record<string, boolean>>({});
@@ -38,11 +40,16 @@ function DepartmentsPage() {
     if (!isAdmin) return;
     supabase
       .from("departments")
-      .select("id, monthly_report_email")
+      .select("id, name, monthly_report_email, monthly_report_subject")
       .then(({ data }) => {
         const map: Record<string, boolean> = {};
-        (data ?? []).forEach((d: any) => { map[d.id] = !!d.monthly_report_email; });
+        const subj: Record<string, string> = {};
+        (data ?? []).forEach((d: any) => {
+          map[d.id] = !!d.monthly_report_email;
+          subj[d.id] = d.monthly_report_subject || "";
+        });
         setEmailFlags(map);
+        setSubjects(subj);
       });
   }, [isAdmin, departments.length]);
 
@@ -77,6 +84,7 @@ function DepartmentsPage() {
   const startEdit = (id: string, name: string) => {
     setEditingId(id);
     setEditingName(name);
+    setEditingSubject(subjects[id] || "");
   };
 
   const saveEdit = async () => {
@@ -84,10 +92,15 @@ function DepartmentsPage() {
     const name = editingName.trim();
     if (!name) return;
     setBusy(true);
-    const { error } = await supabase.from("departments").update({ name }).eq("id", editingId);
+    const subject = editingSubject.trim() || null;
+    const { error } = await supabase
+      .from("departments")
+      .update({ name, monthly_report_subject: subject })
+      .eq("id", editingId);
     setBusy(false);
     if (error) return toast.error(friendlyError(error));
-    toast.success("Renamed (members & chat settings updated)");
+    setSubjects((s) => ({ ...s, [editingId]: editingSubject.trim() }));
+    toast.success("Department updated");
     setEditingId(null);
     reload();
   };
@@ -138,24 +151,37 @@ function DepartmentsPage() {
                 <Building2 className="h-4 w-4 text-primary-foreground" />
               </div>
               {editingId === d.id ? (
-                <>
+                <div className="flex-1 grid gap-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      autoFocus
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveEdit();
+                        if (e.key === "Escape") setEditingId(null);
+                      }}
+                      className="flex-1"
+                      placeholder="Department name"
+                    />
+                    <Button size="icon" variant="ghost" onClick={saveEdit} disabled={busy}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <Input
-                    autoFocus
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
+                    value={editingSubject}
+                    onChange={(e) => setEditingSubject(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") saveEdit();
                       if (e.key === "Escape") setEditingId(null);
                     }}
-                    className="flex-1"
+                    placeholder="Email subject (optional). Leave blank for default: Department — Month activity report"
+                    className="text-sm"
                   />
-                  <Button size="icon" variant="ghost" onClick={saveEdit} disabled={busy}>
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </>
+                </div>
               ) : (
                 <>
                   <p className="font-medium flex-1">{d.name}</p>

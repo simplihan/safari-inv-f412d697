@@ -9,6 +9,7 @@ interface Props {
   siteName?: string
   department?: string
   monthLabel?: string
+  subject?: string
   totalSessions?: number
   totalMinutes?: number
   topStaff?: Row[]
@@ -18,16 +19,19 @@ const MonthlyReport = ({
   siteName = 'Pulse Safari',
   department = 'your department',
   monthLabel = 'last month',
+  subject,
   totalSessions = 0,
   totalMinutes = 0,
   topStaff = [],
-}: Props) => (
+}: Props) => {
+  const heading = subject || `${department} — ${monthLabel}`
+  return (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>{department} — {monthLabel} activity summary</Preview>
+    <Preview>{heading}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>{department} — {monthLabel}</Heading>
+        <Heading style={h1}>{heading}</Heading>
         <Text style={text}>
           Here's your {siteName} monthly activity summary.
         </Text>
@@ -52,14 +56,16 @@ const MonthlyReport = ({
       </Container>
     </Body>
   </Html>
-)
+  )
+}
+
 
 export default MonthlyReport
 
 export const template = {
   component: MonthlyReport,
   subject: (data: Record<string, any>) =>
-    `${data.department ?? 'Department'} — ${data.monthLabel ?? 'monthly'} activity report`,
+    data.subject || `${data.department ?? 'Department'} — ${data.monthLabel ?? 'monthly'} activity report`,
   displayName: 'Monthly department report',
   previewData: {
     siteName: 'Pulse Safari',
