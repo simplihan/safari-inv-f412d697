@@ -127,6 +127,7 @@ export const Route = createFileRoute("/api/public/hooks/monthly-reports")({
               siteName: "Pulse Safari",
               department: d.name,
               monthLabel,
+              subject: d.monthly_report_subject || undefined,
               totalSessions,
               totalMinutes,
               topStaff,
