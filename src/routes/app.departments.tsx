@@ -40,11 +40,16 @@ function DepartmentsPage() {
     if (!isAdmin) return;
     supabase
       .from("departments")
-      .select("id, monthly_report_email")
+      .select("id, name, monthly_report_email, monthly_report_subject")
       .then(({ data }) => {
         const map: Record<string, boolean> = {};
-        (data ?? []).forEach((d: any) => { map[d.id] = !!d.monthly_report_email; });
+        const subj: Record<string, string> = {};
+        (data ?? []).forEach((d: any) => {
+          map[d.id] = !!d.monthly_report_email;
+          subj[d.id] = d.monthly_report_subject || "";
+        });
         setEmailFlags(map);
+        setSubjects(subj);
       });
   }, [isAdmin, departments.length]);
 
