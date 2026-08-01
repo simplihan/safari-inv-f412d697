@@ -30,6 +30,8 @@ function DepartmentsPage() {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [editingSubject, setEditingSubject] = useState("");
+  const [subjects, setSubjects] = useState<Record<string, string>>({});
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [emailFlags, setEmailFlags] = useState<Record<string, boolean>>({});
