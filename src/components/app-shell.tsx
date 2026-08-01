@@ -212,6 +212,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <div className="p-6 md:p-10 max-w-7xl mx-auto">{children}</div>
+        <footer className="px-6 md:px-10 pb-6 max-w-7xl mx-auto">
+          <p className="text-xs text-muted-foreground text-center border-t border-border pt-4">
+            Copyright © {new Date().getFullYear()} by Hsn
+          </p>
+        </footer>
       </main>
     </div>
     </NotificationsProvider>

@@ -53,7 +53,7 @@ export const Route = createFileRoute("/api/public/hooks/monthly-reports")({
         // Departments with email enabled
         const { data: depts, error: deptErr } = await sb
           .from("departments")
-          .select("id, name, monthly_report_email, monthly_report_subject")
+          .select("id, name, monthly_report_email, monthly_report_subject, monthly_report_recipients")
           .eq("monthly_report_email", true);
         if (deptErr) return Response.json({ error: deptErr.message }, { status: 500 });
 
@@ -96,10 +96,15 @@ export const Route = createFileRoute("/api/public/hooks/monthly-reports")({
             .sort((a, b) => b.minutes - a.minutes)
             .slice(0, 5);
 
-          // Recipients: admins + managers whose profile.department matches (or no dept = global admin)
-          const recipients = (adminProfiles ?? []).filter((p: any) =>
-            !p.department || p.department === d.name
-          );
+          // Explicit per-department override list takes priority when set.
+          const overrides = String(d.monthly_report_recipients ?? "")
+            .split(/[,;\s]+/)
+            .map((e) => e.trim())
+            .filter((e) => e.includes("@"));
+          const recipients = overrides.length
+            ? overrides.map((email) => ({ id: email.toLowerCase(), email, department: d.name }))
+            // Default: admins + managers whose profile.department matches (or no dept = global admin)
+            : (adminProfiles ?? []).filter((p: any) => !p.department || p.department === d.name);
           for (const rcpt of recipients) {
             if (!rcpt.email) continue;
             const idem = `monthly-${d.id}-${start.toISOString().slice(0, 7)}-${rcpt.id}`;

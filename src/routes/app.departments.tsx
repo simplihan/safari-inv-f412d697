@@ -32,6 +32,8 @@ function DepartmentsPage() {
   const [editingName, setEditingName] = useState("");
   const [editingSubject, setEditingSubject] = useState("");
   const [subjects, setSubjects] = useState<Record<string, string>>({});
+  const [editingRecipients, setEditingRecipients] = useState("");
+  const [recipients, setRecipients] = useState<Record<string, string>>({});
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [emailFlags, setEmailFlags] = useState<Record<string, boolean>>({});
@@ -40,16 +42,19 @@ function DepartmentsPage() {
     if (!isAdmin) return;
     supabase
       .from("departments")
-      .select("id, name, monthly_report_email, monthly_report_subject")
+      .select("id, name, monthly_report_email, monthly_report_subject, monthly_report_recipients")
       .then(({ data }) => {
         const map: Record<string, boolean> = {};
         const subj: Record<string, string> = {};
+        const rcpt: Record<string, string> = {};
         (data ?? []).forEach((d: any) => {
           map[d.id] = !!d.monthly_report_email;
           subj[d.id] = d.monthly_report_subject || "";
+          rcpt[d.id] = d.monthly_report_recipients || "";
         });
         setEmailFlags(map);
         setSubjects(subj);
+        setRecipients(rcpt);
       });
   }, [isAdmin, departments.length]);
 
@@ -85,6 +90,7 @@ function DepartmentsPage() {
     setEditingId(id);
     setEditingName(name);
     setEditingSubject(subjects[id] || "");
+    setEditingRecipients(recipients[id] || "");
   };
 
   const saveEdit = async () => {
@@ -93,13 +99,15 @@ function DepartmentsPage() {
     if (!name) return;
     setBusy(true);
     const subject = editingSubject.trim() || null;
+    const rcpts = editingRecipients.trim() || null;
     const { error } = await supabase
       .from("departments")
-      .update({ name, monthly_report_subject: subject })
+      .update({ name, monthly_report_subject: subject, monthly_report_recipients: rcpts })
       .eq("id", editingId);
     setBusy(false);
     if (error) return toast.error(friendlyError(error));
     setSubjects((s) => ({ ...s, [editingId]: editingSubject.trim() }));
+    setRecipients((s) => ({ ...s, [editingId]: editingRecipients.trim() }));
     toast.success("Department updated");
     setEditingId(null);
     reload();
@@ -179,6 +187,16 @@ function DepartmentsPage() {
                       if (e.key === "Escape") setEditingId(null);
                     }}
                     placeholder="Email subject (optional). Leave blank for default: Department — Month activity report"
+                    className="text-sm"
+                  />
+                  <Input
+                    value={editingRecipients}
+                    onChange={(e) => setEditingRecipients(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEdit();
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    placeholder="Report email address(es), comma separated. Blank = admins & managers of this department"
                     className="text-sm"
                   />
                 </div>
