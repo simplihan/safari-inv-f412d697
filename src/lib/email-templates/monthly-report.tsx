@@ -56,7 +56,9 @@ const MonthlyReport = ({
       </Container>
     </Body>
   </Html>
-)
+  )
+}
+
 
 export default MonthlyReport
 
