@@ -9,6 +9,7 @@ interface Props {
   siteName?: string
   department?: string
   monthLabel?: string
+  subject?: string
   totalSessions?: number
   totalMinutes?: number
   topStaff?: Row[]
