@@ -568,6 +568,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_department_report_recipients: {
+        Args: never
+        Returns: {
+          id: string
+          monthly_report_recipients: string
+        }[]
+      }
       list_departments_public: {
         Args: never
         Returns: {
