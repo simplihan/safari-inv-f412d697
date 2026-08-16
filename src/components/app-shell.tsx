@@ -199,6 +199,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Button onClick={handleSignOut} variant="outline" size="sm" className="w-full">
           <LogOut className="h-4 w-4 mr-2" /> Sign out
         </Button>
+        {isAdmin && (
+          <Button
+            onClick={handleClearCache}
+            disabled={clearing}
+            variant="ghost"
+            size="sm"
+            className="w-full mt-2"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {clearing ? "Clearing…" : "Clear cache"}
+          </Button>
+        )}
         {isAdmin && <p className="text-[10px] text-muted-foreground mt-2 px-1">Admin mode</p>}
         <p className="text-[10px] text-muted-foreground mt-1 px-1">
           Copyright © {new Date().getFullYear()} by Hsn
