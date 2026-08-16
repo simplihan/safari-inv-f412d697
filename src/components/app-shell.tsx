@@ -117,6 +117,33 @@ export function AppShell({ children }: { children: ReactNode }) {
     navigate({ to: "/login" });
   };
 
+  const [clearing, setClearing] = useState(false);
+  const handleClearCache = async () => {
+    setClearing(true);
+    try {
+      // Drop cached app data but keep the signed-in session intact
+      const keep = Object.keys(localStorage).filter(
+        (k) => k.startsWith("sb-") || k === "loginAt" || k === "theme",
+      );
+      const preserved = keep.map((k) => [k, localStorage.getItem(k)] as const);
+      localStorage.clear();
+      sessionStorage.clear();
+      for (const [k, v] of preserved) if (v !== null) localStorage.setItem(k, v);
+
+      if ("caches" in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map((n) => caches.delete(n)));
+      }
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+      window.location.reload();
+    } catch {
+      setClearing(false);
+    }
+  };
+
   const Sidebar = (
     <aside className="w-64 shrink-0 glass-strong h-screen sticky top-0 flex flex-col p-4 border-r border-border">
       <Link to="/app/dashboard" className="flex items-center gap-2 px-2 py-3">
