@@ -10,6 +10,15 @@ export function friendlyError(error: unknown): string {
   if (msg.includes("uniq_break_logs_one_open_per_user")) {
     return "Please stop your current activity before starting a new one.";
   }
+  if (msg.includes("sgc id is already registered") || msg.includes("profiles_sgc_id_unique_ci")) {
+    return "This SGC ID is already registered.";
+  }
+  if (msg.includes("mobile number is already registered") || msg.includes("profiles_mobile_unique_digits")) {
+    return "This mobile number is already registered.";
+  }
+  if (msg.includes("profiles_email_unique_ci") || msg.includes("already registered") || msg.includes("user already registered")) {
+    return "This email address is already registered.";
+  }
   if (code === "23505" || msg.includes("duplicate key")) return "That value is already in use.";
   if (code === "23503") return "That change references something that no longer exists.";
   if (code === "23502") return "A required field is missing.";
