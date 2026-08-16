@@ -22,34 +22,45 @@ export const signInWithSgcId = createServerFn({ method: "POST" })
     const fail = (message: string) =>
       ({ ok: false as const, message });
 
-    const { data: prof } = await admin
+    const { data: profs } = await admin
       .from("profiles")
-      .select("email, status")
+      .select("email, status, created_at")
       .eq("sgc_id", data.sgc_id.trim())
-      .maybeSingle();
+      .order("created_at", { ascending: true });
     // Always return a generic error to avoid SGC enumeration.
     const genericMsg = "Invalid SGC ID or password.";
-    if (!prof?.email) return fail(genericMsg);
+    const candidates = (profs ?? []).filter((p: any) => !!p?.email);
+    if (candidates.length === 0) return fail(genericMsg);
 
     const auth = createClient(url, anonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    const { data: signed, error } = await auth.auth.signInWithPassword({
-      email: prof.email,
-      password: data.password,
-    });
-    if (error || !signed.session) return fail(genericMsg);
+    // An SGC ID may (unexpectedly) map to more than one account: try each.
+    let matched: { email: string; status: string } | null = null;
+    let session: { access_token: string; refresh_token: string } | null = null;
+    for (const cand of candidates) {
+      const { data: signed, error } = await auth.auth.signInWithPassword({
+        email: cand.email as string,
+        password: data.password,
+      });
+      if (!error && signed.session) {
+        matched = { email: cand.email as string, status: cand.status as string };
+        session = signed.session;
+        break;
+      }
+    }
+    if (!matched || !session) return fail(genericMsg);
 
-    if (prof.status === "rejected") {
+    if (matched.status === "rejected") {
       return fail("Your access request was rejected.");
     }
-    if (prof.status === "pending") {
+    if (matched.status === "pending") {
       return fail("Your account is awaiting approval.");
     }
 
     return {
       ok: true as const,
-      access_token: signed.session.access_token,
-      refresh_token: signed.session.refresh_token,
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
     };
   });
