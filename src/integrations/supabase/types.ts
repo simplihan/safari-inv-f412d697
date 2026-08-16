@@ -617,6 +617,13 @@ export type Database = {
           read_ct: number
         }[]
       }
+      registration_identity_taken: {
+        Args: { _mobile: string; _sgc: string }
+        Returns: {
+          mobile_taken: boolean
+          sgc_taken: boolean
+        }[]
+      }
       set_offline: { Args: never; Returns: undefined }
       set_online: { Args: never; Returns: undefined }
       touch_last_seen: { Args: never; Returns: undefined }

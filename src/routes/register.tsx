@@ -33,6 +33,22 @@ function Register() {
     e.preventDefault();
     if (!form.department) return toast.error("Select a department");
     setLoading(true);
+
+    // Block duplicate SGC ID / mobile before creating the account
+    const { data: taken } = await (supabase.rpc as any)("registration_identity_taken", {
+      _sgc: form.sgc_id.trim(),
+      _mobile: form.mobile.trim(),
+    });
+    const row = Array.isArray(taken) ? taken[0] : taken;
+    if (row?.sgc_taken) {
+      setLoading(false);
+      return toast.error("This SGC ID is already registered.");
+    }
+    if (row?.mobile_taken) {
+      setLoading(false);
+      return toast.error("This mobile number is already registered.");
+    }
+
     const redirectUrl = `${window.location.origin}/login`;
     const { error } = await supabase.auth.signUp({
       email: form.email,
