@@ -12,6 +12,7 @@ import { fmtTime, fmtDuration, liveDuration, reasonLabel } from "@/lib/format";
 import { PieChart as PieIcon, Trophy, Clock } from "lucide-react";
 import { useAdminIds } from "@/hooks/use-admin-ids";
 import { useVisibleIds } from "@/hooks/use-visible-ids";
+import { BirthdayCelebration } from "@/components/birthday-celebration";
 
 export const Route = createFileRoute("/app/common")({ component: Common });
 

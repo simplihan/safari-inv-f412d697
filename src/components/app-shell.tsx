@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { NotificationsProvider } from "@/hooks/use-notifications";
+import { BirthdayPrompt } from "@/components/birthday-prompt";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { profile, roles, signOut, canManage, isStaff, isAdmin, isManager, user, hasPermission } = useAuth();
