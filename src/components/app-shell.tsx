@@ -223,6 +223,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <NotificationsProvider>
     <div className="flex min-h-screen w-full">
+      <BirthdayPrompt />
       <div className="hidden md:block">{Sidebar}</div>
       <AnimatePresence>
         {open && (
