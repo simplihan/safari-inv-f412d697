@@ -46,6 +46,7 @@ export function BirthdayCelebration() {
 
   useEffect(() => {
     (async () => {
+      const demo = new URLSearchParams(window.location.search).get("birthdayDemo") === "1";
       const { data } = await supabase.rpc("list_directory");
       const now = new Date();
       const today = ((data ?? []) as any[]).filter((p) => {
@@ -53,6 +54,14 @@ export function BirthdayCelebration() {
         const d = new Date(p.birth_date + "T00:00:00");
         return d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
       }) as Person[];
+      if (demo) {
+        const sample = (today.length ? today : ((data ?? []) as Person[]).slice(0, 2));
+        if (sample.length) {
+          setPeople(sample);
+          setOpen(true);
+        }
+        return;
+      }
       if (!today.length) return;
       const key = `birthdaySeen:${now.toDateString()}`;
       setPeople(today);
