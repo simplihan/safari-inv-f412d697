@@ -100,7 +100,11 @@ function Staff() {
                     "bg-destructive/20 text-foreground border-destructive/40"
                   }>{r.status}</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{r.email} · {r.department ?? "—"}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {r.email} · {r.department ?? "—"} · 🎂 {r.birth_date
+                    ? new Date(r.birth_date + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+                    : "not set"}
+                </p>
               </div>
               {canEdit && (
                 <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
