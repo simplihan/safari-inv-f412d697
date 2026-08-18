@@ -34,6 +34,7 @@ export interface Profile {
   department: string | null;
   status: UserStatus;
   profile_image: string | null;
+  birth_date?: string | null;
   notif_enabled?: boolean;
 }
 

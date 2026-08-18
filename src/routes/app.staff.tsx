@@ -155,6 +155,7 @@ function EditDialog({ user, onClose, onSaved, isAdmin, canEditEmail }: any) {
         mobile: user.mobile,
         status: user.status,
         email: user.email,
+        birth_date: user.birth_date,
       });
       setRoles(user.roles?.length ? user.roles : ["staff"]);
       setNewPwd("");
@@ -253,6 +254,14 @@ function EditDialog({ user, onClose, onSaved, isAdmin, canEditEmail }: any) {
             </Select>
           </div>
           <div><Label>Mobile</Label><Input value={form.mobile ?? ""} onChange={(e) => setForm({ ...form, mobile: e.target.value })} /></div>
+          <div>
+            <Label>Birthday</Label>
+            <Input
+              type="date"
+              value={form.birth_date ?? ""}
+              onChange={(e) => setForm({ ...form, birth_date: e.target.value || null })}
+            />
+          </div>
           <div>
             <Label>Status</Label>
             <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
