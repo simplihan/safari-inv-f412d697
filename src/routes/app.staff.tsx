@@ -100,7 +100,11 @@ function Staff() {
                     "bg-destructive/20 text-foreground border-destructive/40"
                   }>{r.status}</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{r.email} · {r.department ?? "—"}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {r.email} · {r.department ?? "—"} · 🎂 {r.birth_date
+                    ? new Date(r.birth_date + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+                    : "not set"}
+                </p>
               </div>
               {canEdit && (
                 <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
@@ -155,6 +159,7 @@ function EditDialog({ user, onClose, onSaved, isAdmin, canEditEmail }: any) {
         mobile: user.mobile,
         status: user.status,
         email: user.email,
+        birth_date: user.birth_date,
       });
       setRoles(user.roles?.length ? user.roles : ["staff"]);
       setNewPwd("");
@@ -253,6 +258,14 @@ function EditDialog({ user, onClose, onSaved, isAdmin, canEditEmail }: any) {
             </Select>
           </div>
           <div><Label>Mobile</Label><Input value={form.mobile ?? ""} onChange={(e) => setForm({ ...form, mobile: e.target.value })} /></div>
+          <div>
+            <Label>Birthday</Label>
+            <Input
+              type="date"
+              value={form.birth_date ?? ""}
+              onChange={(e) => setForm({ ...form, birth_date: e.target.value || null })}
+            />
+          </div>
           <div>
             <Label>Status</Label>
             <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>

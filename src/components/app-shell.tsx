@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { NotificationsProvider } from "@/hooks/use-notifications";
+import { BirthdayPrompt } from "@/components/birthday-prompt";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { profile, roles, signOut, canManage, isStaff, isAdmin, isManager, user, hasPermission } = useAuth();
@@ -222,6 +223,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <NotificationsProvider>
     <div className="flex min-h-screen w-full">
+      <BirthdayPrompt />
       <div className="hidden md:block">{Sidebar}</div>
       <AnimatePresence>
         {open && (

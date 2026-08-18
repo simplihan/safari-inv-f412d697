@@ -12,6 +12,7 @@ import { fmtTime, fmtDuration, liveDuration, reasonLabel } from "@/lib/format";
 import { PieChart as PieIcon, Trophy, Clock } from "lucide-react";
 import { useAdminIds } from "@/hooks/use-admin-ids";
 import { useVisibleIds } from "@/hooks/use-visible-ids";
+import { BirthdayCelebration } from "@/components/birthday-celebration";
 
 export const Route = createFileRoute("/app/common")({ component: Common });
 
@@ -170,6 +171,7 @@ function Common() {
 
   return (
     <div className="space-y-6">
+      <BirthdayCelebration />
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Common dashboard</h1>
