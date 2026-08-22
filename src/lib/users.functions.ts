@@ -108,8 +108,21 @@ export const adminUpdateEmail = createServerFn({ method: "POST" })
     const isAdmin = roles.includes("admin");
     const isManager = roles.includes("manager");
     if (!isAdmin && !isManager) {
-      throw new Error("Forbidden: admin or manager role required");
+      // Individual edit-level staff grant behaves like a manager here.
+      await requireStaffEditor(context.supabase, context.userId, data.user_id);
+      const { error: e0 } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
+        email: data.email,
+        email_confirm: true,
+      });
+      if (e0) throw new Error(e0.message);
+      const { error: e1 } = await supabaseAdmin
+        .from("profiles")
+        .update({ email: data.email })
+        .eq("id", data.user_id);
+      if (e1) throw new Error(e1.message);
+      return { ok: true };
     }
+
     if (!isAdmin) {
       // Manager: block targeting admins, and enforce same-department scope.
       const { data: targetAdmin } = await supabaseAdmin
