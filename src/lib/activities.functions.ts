@@ -9,8 +9,16 @@ async function requireAdminOrManager(supabase: any, userId: string) {
     .select("role")
     .eq("user_id", userId)
     .in("role", ["admin", "manager"]);
-  if (!data || data.length === 0) throw new Error("Forbidden: admin or manager role required");
+  if (data && data.length > 0) return;
+  // Individual edit-level grant on live monitoring confers the same ability.
+  const { data: canEdit } = await supabase.rpc("has_edit_permission", {
+    _user_id: userId,
+    _perm: "view_monitoring",
+  });
+  if (canEdit === true) return;
+  throw new Error("Forbidden: admin or manager role required");
 }
+
 
 export const adminStartActivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
