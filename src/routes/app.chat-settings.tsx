@@ -15,7 +15,7 @@ export const Route = createFileRoute("/app/chat-settings")({ component: ChatSett
 type Row = { department: string; enabled: boolean };
 
 function ChatSettings() {
-  const { canManage, isAdmin, profile } = useAuth();
+  const { canManage, isAdmin, profile, hasPermission, hasEditPermission } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const { names: deptNames } = useDepartments();
 
@@ -34,9 +34,11 @@ function ChatSettings() {
     return () => { supabase.removeChannel(ch); };
   }, [deptNames.join("|")]);
 
-  if (!canManage) return <Navigate to="/app/dashboard" />;
+  if (!canManage && !hasPermission("manage_chat_settings")) return <Navigate to="/app/dashboard" />;
 
-  const canEdit = (dept: string) => isAdmin || profile?.department === dept;
+  const canEdit = (dept: string) =>
+    isAdmin ||
+    ((canManage || hasEditPermission("manage_chat_settings")) && profile?.department === dept);
 
   const toggle = async (dept: string, next: boolean) => {
     setRows((rs) => rs.map((r) => (r.department === dept ? { ...r, enabled: next } : r)));

@@ -108,8 +108,21 @@ export const adminUpdateEmail = createServerFn({ method: "POST" })
     const isAdmin = roles.includes("admin");
     const isManager = roles.includes("manager");
     if (!isAdmin && !isManager) {
-      throw new Error("Forbidden: admin or manager role required");
+      // Individual edit-level staff grant behaves like a manager here.
+      await requireStaffEditor(context.supabase, context.userId, data.user_id);
+      const { error: e0 } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
+        email: data.email,
+        email_confirm: true,
+      });
+      if (e0) throw new Error(e0.message);
+      const { error: e1 } = await supabaseAdmin
+        .from("profiles")
+        .update({ email: data.email })
+        .eq("id", data.user_id);
+      if (e1) throw new Error(e1.message);
+      return { ok: true };
     }
+
     if (!isAdmin) {
       // Manager: block targeting admins, and enforce same-department scope.
       const { data: targetAdmin } = await supabaseAdmin
@@ -211,7 +224,7 @@ export const adminSetActive = createServerFn({ method: "POST" })
     }).parse(data)
   )
   .handler(async ({ data, context }) => {
-    await requireAdmin(context.supabase, context.userId);
+    await requireStaffEditor(context.supabase, context.userId, data.user_id);
     const { error } = await supabaseAdmin
       .from("profiles")
       .update({ status: data.active ? "approved" : "rejected" })
@@ -219,3 +232,65 @@ export const adminSetActive = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * Admin, or a manager / individually-granted "edit" holder acting on a
+ * same-department non-admin user.
+ */
+async function requireStaffEditor(supabase: any, actorId: string, targetId: string) {
+  const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", actorId);
+  const roles = ((roleRows ?? []) as { role: string }[]).map((r) => r.role);
+  if (roles.includes("admin")) return;
+
+  let allowed = roles.includes("manager") || roles.includes("supervisor");
+  if (!allowed) {
+    const { data: perms } = await supabase
+      .from("user_permissions")
+      .select("permission, scope, access_level")
+      .eq("user_id", actorId)
+      .eq("access_level", "edit");
+    allowed = ((perms ?? []) as { permission: string }[]).some(
+      (p) => p.permission === "manage_staff" || p.permission === "view_pending"
+    );
+    if (!allowed) throw new Error("Forbidden: staff edit permission required");
+    const global = ((perms ?? []) as { permission: string; scope: string }[]).some(
+      (p) =>
+        p.scope === "global" &&
+        (p.permission === "manage_staff" ||
+          p.permission === "view_pending" ||
+          p.permission === "cross_department")
+    );
+    if (global) return;
+  }
+
+  const { data: targetAdmin } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", targetId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (targetAdmin) throw new Error("Forbidden: cannot modify an admin account");
+
+  const [{ data: actorDepts }, { data: targetDepts }, { data: actorProfile }, { data: targetProfile }] =
+    await Promise.all([
+      supabaseAdmin.from("user_departments").select("department").eq("user_id", actorId),
+      supabaseAdmin.from("user_departments").select("department").eq("user_id", targetId),
+      supabaseAdmin.from("profiles").select("department").eq("id", actorId).maybeSingle(),
+      supabaseAdmin.from("profiles").select("department").eq("id", targetId).maybeSingle(),
+    ]);
+  const actorSet = new Set<string>(
+    [
+      ...((actorDepts ?? []) as { department: string }[]).map((d) => d.department),
+      actorProfile?.department,
+    ].filter(Boolean) as string[]
+  );
+  const targetSet = new Set<string>(
+    [
+      ...((targetDepts ?? []) as { department: string }[]).map((d) => d.department),
+      targetProfile?.department,
+    ].filter(Boolean) as string[]
+  );
+  if (![...actorSet].some((d) => targetSet.has(d))) {
+    throw new Error("Forbidden: target user is not in your department");
+  }
+}

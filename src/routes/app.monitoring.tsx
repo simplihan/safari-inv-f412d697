@@ -36,9 +36,9 @@ type Row = {
 };
 
 function Monitoring() {
-  const { canManage, isAdmin, hasPermission } = useAuth();
+  const { canManage, isAdmin, hasPermission, hasEditPermission } = useAuth();
   const allowed = canManage || hasPermission("view_monitoring");
-  const canEditActivity = canManage;
+  const canEditActivity = canManage || hasEditPermission("view_monitoring");
   const adminIds = useAdminIds();
   const { ids: visibleIds } = useVisibleIds();
   const startFn = useServerFn(adminStartActivity);

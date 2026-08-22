@@ -13,8 +13,9 @@ import { Navigate } from "@tanstack/react-router";
 export const Route = createFileRoute("/app/pending")({ component: Pending });
 
 function Pending() {
-  const { canManage, hasPermission } = useAuth();
+  const { canManage, hasPermission, hasEditPermission } = useAuth();
   const allowed = canManage || hasPermission("view_pending");
+  const canDecide = canManage || hasEditPermission("view_pending") || hasEditPermission("manage_staff");
   const [rows, setRows] = useState<any[]>([]);
 
   const load = async () => {
@@ -57,14 +58,16 @@ function Pending() {
                   {r.mobile && <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{r.mobile}</span>}
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => decide(r.id, "rejected")}>
-                  <X className="h-4 w-4 mr-1" /> Reject
-                </Button>
-                <Button size="sm" className="gradient-primary text-primary-foreground border-0" onClick={() => decide(r.id, "approved")}>
-                  <Check className="h-4 w-4 mr-1" /> Approve
-                </Button>
-              </div>
+              {canDecide && (
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => decide(r.id, "rejected")}>
+                    <X className="h-4 w-4 mr-1" /> Reject
+                  </Button>
+                  <Button size="sm" className="gradient-primary text-primary-foreground border-0" onClick={() => decide(r.id, "approved")}>
+                    <Check className="h-4 w-4 mr-1" /> Approve
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
