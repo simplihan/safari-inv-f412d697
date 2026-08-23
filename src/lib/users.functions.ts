@@ -19,14 +19,45 @@ export const adminCreateUser = createServerFn({ method: "POST" })
   .inputValidator((data) => CreateInput.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    // verify caller is admin
-    const { data: roleRow } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!roleRow) throw new Error("Forbidden: admin role required");
+    // Admins are unrestricted. Managers and edit-level manage_staff holders may
+    // create non-admin users inside their own department(s) (global scope = any).
+    const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const callerRoles = ((roleRows ?? []) as { role: string }[]).map((r) => r.role);
+    if (!callerRoles.includes("admin")) {
+      if (data.role === "admin") throw new Error("Forbidden: only an admin can create admin accounts");
+
+      let allowed = callerRoles.includes("manager");
+      let global = false;
+      if (!allowed) {
+        const { data: perms } = await supabase
+          .from("user_permissions")
+          .select("permission, scope, access_level")
+          .eq("user_id", userId)
+          .eq("access_level", "edit");
+        const list = (perms ?? []) as { permission: string; scope: string }[];
+        allowed = list.some((p) => p.permission === "manage_staff");
+        if (!allowed) throw new Error("Forbidden: staff edit permission required");
+        global = list.some(
+          (p) => p.scope === "global" && (p.permission === "manage_staff" || p.permission === "cross_department"),
+        );
+      }
+
+      if (!global) {
+        const [{ data: callerDepts }, { data: callerProfile }] = await Promise.all([
+          supabase.from("user_departments").select("department").eq("user_id", userId),
+          supabase.from("profiles").select("department").eq("id", userId).maybeSingle(),
+        ]);
+        const mine = new Set<string>(
+          [
+            ...((callerDepts ?? []) as { department: string }[]).map((d) => d.department),
+            callerProfile?.department,
+          ].filter(Boolean) as string[],
+        );
+        if (!mine.has(data.department)) {
+          throw new Error("Forbidden: you can only add users to your own department");
+        }
+      }
+    }
 
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
