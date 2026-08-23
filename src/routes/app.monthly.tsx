@@ -68,8 +68,9 @@ function thisMonthYM() {
 }
 
 function MonthlyReports() {
-  const { canManage, isAdmin, profile, hasPermission } = useAuth();
+  const { canManage, isAdmin, profile, hasPermission, hasEditPermission } = useAuth();
   const allowed = canManage || hasPermission("view_monthly");
+  const canExport = canManage || hasEditPermission("view_monthly");
   const [ym, setYm] = useState(thisMonthYM());
   const [dept, setDept] = useState<string>("__all");
   const [departments, setDepartments] = useState<string[]>([]);
@@ -264,9 +265,11 @@ function MonthlyReports() {
               </Select>
             </div>
           )}
-          <Button onClick={exportXLSX} className="gradient-primary text-primary-foreground border-0">
-            <FileDown className="h-4 w-4 mr-2" /> Download Excel
-          </Button>
+          {canExport && (
+            <Button onClick={exportXLSX} className="gradient-primary text-primary-foreground border-0">
+              <FileDown className="h-4 w-4 mr-2" /> Download Excel
+            </Button>
+          )}
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input

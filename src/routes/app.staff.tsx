@@ -72,7 +72,7 @@ function Staff() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search..." className="pl-9" />
           </div>
-          {isAdmin && (
+          {canEdit && (
             <Button onClick={() => setCreating(true)} className="gradient-primary text-primary-foreground border-0">
               <UserPlus className="h-4 w-4 mr-2" /> Add user
             </Button>
@@ -116,7 +116,7 @@ function Staff() {
                   <ShieldCheck className="h-4 w-4 mr-1" /> Permissions
                 </Button>
               )}
-              {isAdmin && (
+              {canEdit && (
                 <Button
                   size="sm"
                   variant={r.status === "approved" ? "outline" : "default"}

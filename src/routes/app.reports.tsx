@@ -31,8 +31,9 @@ export const Route = createFileRoute("/app/reports")({ component: Reports });
 const COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"];
 
 function Reports() {
-  const { canManage, hasPermission } = useAuth();
+  const { canManage, hasPermission, hasEditPermission } = useAuth();
   const allowed = canManage || hasPermission("view_reports");
+  const canExport = canManage || hasEditPermission("view_reports");
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
   const [from, setFrom] = useState(weekAgo);
