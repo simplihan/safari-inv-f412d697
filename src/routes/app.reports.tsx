@@ -200,17 +200,19 @@ function Reports() {
           </div>
         </div>
       </div>
-      <div className="flex gap-2">
-        <Button onClick={exportCSV} variant="outline">
-          <Download className="h-4 w-4 mr-2" /> CSV
-        </Button>
-        <Button onClick={exportXLSX} variant="outline">
-          <FileDown className="h-4 w-4 mr-2" /> Excel
-        </Button>
-        <Button onClick={exportPDF} className="gradient-primary text-primary-foreground border-0">
-          <FileDown className="h-4 w-4 mr-2" /> PDF
-        </Button>
-      </div>
+      {canExport && (
+        <div className="flex gap-2">
+          <Button onClick={exportCSV} variant="outline">
+            <Download className="h-4 w-4 mr-2" /> CSV
+          </Button>
+          <Button onClick={exportXLSX} variant="outline">
+            <FileDown className="h-4 w-4 mr-2" /> Excel
+          </Button>
+          <Button onClick={exportPDF} className="gradient-primary text-primary-foreground border-0">
+            <FileDown className="h-4 w-4 mr-2" /> PDF
+          </Button>
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="glass">
           <CardHeader>
