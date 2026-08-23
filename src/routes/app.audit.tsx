@@ -45,8 +45,9 @@ interface AuditRow {
 }
 
 function AuditPage() {
-  const { isAdmin, hasPermission } = useAuth();
+  const { isAdmin, hasPermission, hasEditPermission } = useAuth();
   const allowed = isAdmin || hasPermission("view_audit");
+  const canDelete = isAdmin || hasEditPermission("view_audit");
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [action, setAction] = useState<string>("all");
@@ -120,7 +121,7 @@ function AuditPage() {
         <CardContent className="overflow-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-muted-foreground">
-              <tr><th className="py-2">Profile</th><th>Changed by</th><th>Time</th><th>Changes</th>{isAdmin && <th className="w-10"></th>}</tr>
+              <tr><th className="py-2">Profile</th><th>Changed by</th><th>Time</th><th>Changes</th>{canDelete && <th className="w-10"></th>}</tr>
             </thead>
             <tbody>
               {filtered.map((r) => (
@@ -139,7 +140,7 @@ function AuditPage() {
                   <td className="text-xs">
                     <ChangeSummary payload={r.payload} />
                   </td>
-                  {isAdmin && (
+                  {canDelete && (
                     <td className="text-right">
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -163,7 +164,7 @@ function AuditPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={isAdmin ? 5 : 4} className="py-8 text-center text-muted-foreground">No profile changes</td></tr>
+                <tr><td colSpan={canDelete ? 5 : 4} className="py-8 text-center text-muted-foreground">No profile changes</td></tr>
               )}
             </tbody>
           </table>

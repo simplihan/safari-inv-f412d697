@@ -15,7 +15,7 @@ export const Route = createFileRoute("/app/chat-settings")({ component: ChatSett
 type Row = { department: string; enabled: boolean };
 
 function ChatSettings() {
-  const { canManage, isAdmin, profile, hasPermission, hasEditPermission } = useAuth();
+  const { canManage, isAdmin, profile, hasPermission, hasEditPermission, hasGlobalPermission } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const { names: deptNames } = useDepartments();
 
@@ -38,6 +38,7 @@ function ChatSettings() {
 
   const canEdit = (dept: string) =>
     isAdmin ||
+    hasGlobalPermission("manage_chat_settings") ||
     ((canManage || hasEditPermission("manage_chat_settings")) && profile?.department === dept);
 
   const toggle = async (dept: string, next: boolean) => {

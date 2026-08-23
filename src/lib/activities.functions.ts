@@ -113,7 +113,7 @@ export const adminUpdateActivity = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await requireAdmin(context.supabase, context.userId);
+    await requireAdminOrManager(context.supabase, context.userId);
     const { data: row } = await supabaseAdmin
       .from("break_logs")
       .select("out_time, in_time, status")
@@ -149,7 +149,7 @@ export const adminDeleteActivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ activity_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await requireAdmin(context.supabase, context.userId);
+    await requireAdminOrManager(context.supabase, context.userId);
     const { error } = await supabaseAdmin.from("break_logs").delete().eq("id", data.activity_id);
     if (error) throw new Error(error.message);
     return { ok: true };

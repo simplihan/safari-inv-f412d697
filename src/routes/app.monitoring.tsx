@@ -261,7 +261,7 @@ function Monitoring() {
                       {liveDuration(r.active!.out_time)}
                     </span>
                   </div>
-                  {canManage && (
+                  {canEditActivity && (
                     <div className="mt-3 flex justify-end">
                       <Button
                         size="sm"
@@ -297,7 +297,7 @@ function Monitoring() {
                   <p className="text-sm font-medium truncate">{r.full_name}</p>
                   <p className="text-xs text-muted-foreground truncate">{r.department ?? "—"}</p>
                 </div>
-                {canManage ? (
+                {canEditActivity ? (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -338,12 +338,12 @@ function Monitoring() {
                     <p className="text-sm font-semibold">
                       {t.duration_minutes != null ? `${t.duration_minutes}m` : <span className="text-warning">live · {liveDuration(t.out_time)}</span>}
                     </p>
-                    {canManage && t.status === "out" && (
+                    {canEditActivity && t.status === "out" && (
                       <Button size="sm" variant="outline" disabled={busy === t.id} onClick={() => handleStop(t.id)}>
                         <Square className="h-3.5 w-3.5 mr-1.5" /> Stop
                       </Button>
                     )}
-                    {isAdmin && (
+                    {canEditActivity && (
                       <div className="flex gap-1">
                         <Button size="sm" variant="ghost" className="h-7 px-2" disabled={busy === t.id} onClick={() => openEdit(t)}>
                           <Pencil className="h-3.5 w-3.5" />

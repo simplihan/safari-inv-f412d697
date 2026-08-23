@@ -31,8 +31,9 @@ export const Route = createFileRoute("/app/reports")({ component: Reports });
 const COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"];
 
 function Reports() {
-  const { canManage, hasPermission } = useAuth();
+  const { canManage, hasPermission, hasEditPermission } = useAuth();
   const allowed = canManage || hasPermission("view_reports");
+  const canExport = canManage || hasEditPermission("view_reports");
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
   const [from, setFrom] = useState(weekAgo);
@@ -199,17 +200,19 @@ function Reports() {
           </div>
         </div>
       </div>
-      <div className="flex gap-2">
-        <Button onClick={exportCSV} variant="outline">
-          <Download className="h-4 w-4 mr-2" /> CSV
-        </Button>
-        <Button onClick={exportXLSX} variant="outline">
-          <FileDown className="h-4 w-4 mr-2" /> Excel
-        </Button>
-        <Button onClick={exportPDF} className="gradient-primary text-primary-foreground border-0">
-          <FileDown className="h-4 w-4 mr-2" /> PDF
-        </Button>
-      </div>
+      {canExport && (
+        <div className="flex gap-2">
+          <Button onClick={exportCSV} variant="outline">
+            <Download className="h-4 w-4 mr-2" /> CSV
+          </Button>
+          <Button onClick={exportXLSX} variant="outline">
+            <FileDown className="h-4 w-4 mr-2" /> Excel
+          </Button>
+          <Button onClick={exportPDF} className="gradient-primary text-primary-foreground border-0">
+            <FileDown className="h-4 w-4 mr-2" /> PDF
+          </Button>
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="glass">
           <CardHeader>

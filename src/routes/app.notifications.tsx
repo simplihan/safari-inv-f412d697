@@ -26,8 +26,9 @@ const priorityClass: Record<NotificationPriority, string> = {
 };
 
 function NotificationsAdmin() {
-  const { canManage, isAdmin, profile, user, hasPermission } = useAuth();
+  const { canManage, isAdmin, profile, user, hasPermission, hasEditPermission, hasGlobalPermission } = useAuth();
   const allowed = canManage || hasPermission("send_notifications");
+  const canWrite = canManage || hasEditPermission("send_notifications");
   const { names: deptNames } = useDepartments();
 
   const [title, setTitle] = useState("");
@@ -97,7 +98,10 @@ function NotificationsAdmin() {
   };
 
   // Managers can only target their own department or global; admins anywhere
-  const allowedDepartments = isAdmin ? deptNames : deptNames.filter((d) => d === profile?.department);
+  const allowedDepartments =
+    isAdmin || hasGlobalPermission("send_notifications")
+      ? deptNames
+      : deptNames.filter((d) => d === profile?.department);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -113,6 +117,7 @@ function NotificationsAdmin() {
         </div>
       </div>
 
+      {canWrite && (
       <Card className="glass">
         <CardHeader>
           <CardTitle>New notification</CardTitle>
@@ -186,6 +191,7 @@ function NotificationsAdmin() {
           </Button>
         </CardContent>
       </Card>
+      )}
 
       <Card className="glass">
         <CardHeader>
@@ -197,7 +203,7 @@ function NotificationsAdmin() {
           ) : (
             <ul className="divide-y divide-border">
               {items.map((n) => {
-                const canDelete = isAdmin || n.created_by === user?.id;
+                const canDelete = canWrite && (isAdmin || n.created_by === user?.id);
                 return (
                   <li key={n.id} className="py-3 flex items-start gap-3">
                     <div className="flex-1 min-w-0">
