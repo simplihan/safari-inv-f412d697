@@ -80,14 +80,25 @@ function MonthlyReports() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Department filter: admin sees all + can pick one; manager/supervisor scoped to own dept
-  const scopedDept = isAdmin ? (dept === "__all" ? null : dept) : profile?.department ?? null;
+  // Permission scope: global grant (or admin) => all departments,
+  // department grant => only the viewer's own department(s).
+  const { depts: allowedDepts } = useScopedDepartments("view_monthly");
+  const globalScope = allowedDepts === null;
+  const deptOptions = allowedDepts ?? departments;
+  const inScope = (d: string | null | undefined) => {
+    if (dept !== "__all") return d === dept;
+    if (globalScope) return true;
+    return !!d && (allowedDepts ?? []).includes(d);
+  };
+  const scopeLabel =
+    dept !== "__all" ? dept : globalScope ? null : (allowedDepts ?? []).join(", ") || profile?.department || null;
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!globalScope) return;
     supabase.from("departments").select("name").order("name").then(({ data }) => {
       setDepartments((data ?? []).map((d: any) => d.name));
     });
-  }, [isAdmin]);
+  }, [globalScope]);
 
   useEffect(() => {
     if (!allowed) return;
