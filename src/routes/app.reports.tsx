@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Download, FileDown } from "lucide-react";
 import { fmtDuration, fmtDateTime } from "@/lib/format";
+import { useScopedDepartments } from "@/hooks/use-scoped-departments";
 import {
   ResponsiveContainer,
   BarChart,
@@ -33,6 +34,8 @@ const COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"
 function Reports() {
   const { canManage, hasPermission, hasEditPermission } = useAuth();
   const allowed = canManage || hasPermission("view_reports");
+  // Global grant (or admin) => all departments; department grant => own department(s) only.
+  const { depts: allowedDepts } = useScopedDepartments("view_reports");
   const canExport = canManage || hasEditPermission("view_reports");
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
@@ -72,40 +75,48 @@ function Reports() {
     })();
   }, [from, to, allowed]);
 
+  const scopedRows = useMemo(() => {
+    if (allowedDepts === null) return rows;
+    return rows.filter((r) => {
+      const d = profiles[r.user_id]?.department;
+      return !!d && allowedDepts.includes(d);
+    });
+  }, [rows, profiles, allowedDepts]);
+
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) => {
+    if (!q) return scopedRows;
+    return scopedRows.filter((r) => {
       const p = profiles[r.user_id];
       return (p?.full_name ?? "").toLowerCase().includes(q) || (p?.sgc_id ?? "").toLowerCase().includes(q);
     });
-  }, [rows, profiles, searchQuery]);
+  }, [scopedRows, profiles, searchQuery]);
 
   const reasonAgg = useMemo(() => {
     const m: Record<string, number> = {};
-    rows.forEach((r) => {
+    scopedRows.forEach((r) => {
       m[r.reason] = (m[r.reason] ?? 0) + (r.duration_minutes ?? 0);
     });
     return Object.entries(m).map(([name, value]) => ({ name, value }));
-  }, [rows]);
+  }, [scopedRows]);
 
   const userAgg = useMemo(() => {
     const m: Record<string, number> = {};
-    rows.forEach((r) => {
+    scopedRows.forEach((r) => {
       m[r.user_id] = (m[r.user_id] ?? 0) + (r.duration_minutes ?? 0);
     });
     return Object.entries(m)
       .map(([id, mins]) => ({ name: profiles[id]?.full_name ?? "—", mins }))
       .sort((a, b) => b.mins - a.mins)
       .slice(0, 10);
-  }, [rows, profiles]);
+  }, [scopedRows, profiles]);
 
   if (!allowed) return <Navigate to="/app/dashboard" />;
 
   const exportCSV = () => {
     const header = ["Name", "Department", "Reason", "Remarks", "Out", "In", "Duration (min)", "Device"];
     const lines = [header.join(",")];
-    rows.forEach((r) => {
+    scopedRows.forEach((r) => {
       const p = profiles[r.user_id];
       lines.push(
         [
@@ -134,7 +145,7 @@ function Reports() {
     autoTable(doc, {
       startY: 22,
       head: [["Name", "Department", "Reason", "Out", "In", "Min", "Device"]],
-      body: rows.map((r) => {
+      body: scopedRows.map((r) => {
         const p = profiles[r.user_id];
         return [
           p?.full_name ?? "—",
@@ -151,7 +162,7 @@ function Reports() {
   };
 
   const exportXLSX = () => {
-    const data = rows.map((r) => {
+    const data = scopedRows.map((r) => {
       const p = profiles[r.user_id];
       return {
         Name: p?.full_name ?? "—",
@@ -176,7 +187,7 @@ function Reports() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Reports & analytics</h1>
           <p className="text-muted-foreground mt-1">
-            {filteredRows.length} of {rows.length} sessions in range
+            {filteredRows.length} of {scopedRows.length} sessions in range
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-end">
@@ -276,7 +287,7 @@ function Reports() {
                   <td>{deviceByUser[r.user_id] ?? "—"}</td>
                 </tr>
               ))}
-              {filteredRows.length === 0 && rows.length > 0 && (
+              {filteredRows.length === 0 && scopedRows.length > 0 && (
                 <tr>
                   <td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
                     No sessions match your search.

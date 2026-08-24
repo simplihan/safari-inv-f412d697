@@ -12,6 +12,7 @@ import { FileDown, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { fmtDuration } from "@/lib/format";
+import { useScopedDepartments } from "@/hooks/use-scoped-departments";
 
 export const Route = createFileRoute("/app/monthly")({ component: MonthlyReports });
 
@@ -68,7 +69,7 @@ function thisMonthYM() {
 }
 
 function MonthlyReports() {
-  const { canManage, isAdmin, profile, hasPermission, hasEditPermission } = useAuth();
+  const { canManage, profile, hasPermission, hasEditPermission } = useAuth();
   const allowed = canManage || hasPermission("view_monthly");
   const canExport = canManage || hasEditPermission("view_monthly");
   const [ym, setYm] = useState(thisMonthYM());
@@ -80,14 +81,25 @@ function MonthlyReports() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Department filter: admin sees all + can pick one; manager/supervisor scoped to own dept
-  const scopedDept = isAdmin ? (dept === "__all" ? null : dept) : profile?.department ?? null;
+  // Permission scope: global grant (or admin) => all departments,
+  // department grant => only the viewer's own department(s).
+  const { depts: allowedDepts } = useScopedDepartments("view_monthly");
+  const globalScope = allowedDepts === null;
+  const deptOptions = allowedDepts ?? departments;
+  const inScope = (d: string | null | undefined) => {
+    if (dept !== "__all") return d === dept;
+    if (globalScope) return true;
+    return !!d && (allowedDepts ?? []).includes(d);
+  };
+  const scopeLabel =
+    dept !== "__all" ? dept : globalScope ? null : (allowedDepts ?? []).join(", ") || profile?.department || null;
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!globalScope) return;
     supabase.from("departments").select("name").order("name").then(({ data }) => {
       setDepartments((data ?? []).map((d: any) => d.name));
     });
-  }, [isAdmin]);
+  }, [globalScope]);
 
   useEffect(() => {
     if (!allowed) return;
@@ -127,7 +139,7 @@ function MonthlyReports() {
     const byUser: Record<string, { id: string; mins: number; sessions: number }> = {};
     for (const r of rows) {
       const p = profiles[r.user_id];
-      if (scopedDept && p?.department !== scopedDept) continue;
+      if (!inScope(p?.department)) continue;
       const k = r.user_id;
       if (!byUser[k]) byUser[k] = { id: k, mins: 0, sessions: 0 };
       byUser[k].mins += r.duration_minutes ?? 0;
@@ -149,7 +161,7 @@ function MonthlyReports() {
         };
       })
       .sort((a, b) => b.total_minutes - a.total_minutes);
-  }, [rows, profiles, scopedDept, ym]);
+  }, [rows, profiles, dept, allowedDepts, globalScope, ym]);
 
   const filteredAggregated = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -181,7 +193,7 @@ function MonthlyReports() {
       Category: a.category,
     }));
     const detail = rows
-      .filter((r) => !scopedDept || profiles[r.user_id]?.department === scopedDept)
+      .filter((r) => inScope(profiles[r.user_id]?.department))
       .map((r) => {
         const p = profiles[r.user_id] ?? {};
         return {
@@ -204,7 +216,7 @@ function MonthlyReports() {
 
     const meta = [
       { Field: "Month", Value: label },
-      { Field: "Department", Value: scopedDept ?? "All" },
+      { Field: "Department", Value: scopeLabel ?? "All" },
       { Field: "Generated", Value: new Date().toISOString() },
       { Field: "Low threshold (min)", Value: `≤ ${LOW_MAX}` },
       { Field: "Medium threshold (min)", Value: `≤ ${MED_MAX}` },
@@ -216,7 +228,7 @@ function MonthlyReports() {
     const mws = XLSX.utils.json_to_sheet(meta);
     XLSX.utils.book_append_sheet(wb, mws, "Meta");
 
-    XLSX.writeFile(wb, `pulse-monthly-${label}${scopedDept ? `-${scopedDept}` : ""}.xlsx`);
+    XLSX.writeFile(wb, `pulse-monthly-${label}${dept !== "__all" ? `-${dept}` : ""}.xlsx`);
     toast.success("Monthly report downloaded");
   };
 
@@ -253,14 +265,14 @@ function MonthlyReports() {
               </SelectContent>
             </Select>
           </div>
-          {isAdmin && (
+          {deptOptions.length > 1 && (
             <div>
               <Label>Department</Label>
               <Select value={dept} onValueChange={setDept}>
                 <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all">All departments</SelectItem>
-                  {departments.map((d) => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
+                  <SelectItem value="__all">{globalScope ? "All departments" : "My departments"}</SelectItem>
+                  {deptOptions.map((d) => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
@@ -311,7 +323,7 @@ function MonthlyReports() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CalendarDays className="h-5 w-5" />
-            {ym} — {filteredAggregated.length} of {aggregated.length} staff{scopedDept ? ` · ${scopedDept}` : ""}
+            {ym} — {filteredAggregated.length} of {aggregated.length} staff{scopeLabel ? ` · ${scopeLabel}` : ""}
           </CardTitle>
         </CardHeader>
         <CardContent className="overflow-auto">
