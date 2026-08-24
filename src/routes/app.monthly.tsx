@@ -69,7 +69,7 @@ function thisMonthYM() {
 }
 
 function MonthlyReports() {
-  const { canManage, isAdmin, profile, hasPermission, hasEditPermission } = useAuth();
+  const { canManage, profile, hasPermission, hasEditPermission } = useAuth();
   const allowed = canManage || hasPermission("view_monthly");
   const canExport = canManage || hasEditPermission("view_monthly");
   const [ym, setYm] = useState(thisMonthYM());
