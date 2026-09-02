@@ -218,6 +218,48 @@ export type Database = {
         }
         Relationships: []
       }
+      festivals: {
+        Row: {
+          active: boolean
+          country: string
+          created_at: string
+          created_by: string | null
+          dates: string[]
+          emoji: string
+          flag: string
+          greeting: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          dates?: string[]
+          emoji?: string
+          flag?: string
+          greeting?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          dates?: string[]
+          emoji?: string
+          flag?: string
+          greeting?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       login_events: {
         Row: {
           browser: string | null
