@@ -3,7 +3,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { festivalsOn, FESTIVALS, matchesToday, type Festival } from "@/lib/festivals";
+import { FESTIVALS, matchesToday, type Festival } from "@/lib/festivals";
 
 const COLORS = ["#6366f1", "#f59e0b", "#ef4444", "#10b981", "#ec4899", "#38bdf8"];
 
