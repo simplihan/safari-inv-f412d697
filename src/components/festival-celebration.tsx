@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { festivalsOn, FESTIVALS, type Festival } from "@/lib/festivals";
+import { supabase } from "@/integrations/supabase/client";
+import { FESTIVALS, matchesToday, type Festival } from "@/lib/festivals";
 
 const COLORS = ["#6366f1", "#f59e0b", "#ef4444", "#10b981", "#ec4899", "#38bdf8"];
 
@@ -41,21 +42,51 @@ export function FestivalCelebration() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const demo = params.get("festivalDemo");
-    if (demo) {
-      const picked = demo === "1" ? [FESTIVALS[0]!] : FESTIVALS.filter((f) => f.id === demo);
-      if (picked.length) {
-        setItems(picked);
-        setOpen(true);
+    let cancelled = false;
+    const run = async () => {
+      // Load the admin-managed list; fall back to the built-in list if unavailable.
+      let list: Festival[] = FESTIVALS;
+      const { data } = await (supabase as any)
+        .from("festivals")
+        .select("id, name, country, flag, emoji, greeting, dates, active")
+        .eq("active", true);
+      if (Array.isArray(data) && data.length) {
+        list = data.map((f: any) => ({
+          id: f.id,
+          name: f.name,
+          country: f.country,
+          flag: f.flag,
+          emoji: f.emoji,
+          greeting: f.greeting ?? "",
+          dates: f.dates ?? [],
+        })) as Festival[];
       }
-      return;
-    }
-    const today = festivalsOn(new Date());
-    if (!today.length) return;
-    setItems(today);
-    const key = `festivalSeen:${new Date().toDateString()}`;
-    if (localStorage.getItem(key) !== "1") setOpen(true);
+      if (cancelled) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const demo = params.get("festivalDemo");
+      if (demo) {
+        const picked =
+          demo === "1"
+            ? list.slice(0, 1)
+            : list.filter((f) => f.id === demo || f.name.toLowerCase() === demo.toLowerCase());
+        if (picked.length) {
+          setItems(picked);
+          setOpen(true);
+        }
+        return;
+      }
+
+      const today = list.filter((f) => matchesToday(f, new Date()));
+      if (!today.length) return;
+      setItems(today);
+      const key = `festivalSeen:${new Date().toDateString()}`;
+      if (localStorage.getItem(key) !== "1") setOpen(true);
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (!items.length) return null;

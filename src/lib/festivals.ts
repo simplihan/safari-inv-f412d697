@@ -165,3 +165,12 @@ export function festivalsOn(date: Date): Festival[] {
   const full = `${date.getFullYear()}-${md}`;
   return FESTIVALS.filter((f) => f.dates.includes(md) || f.dates.includes(full));
 }
+
+/** True when the festival's date list includes the given local date. */
+export function matchesToday(f: Pick<Festival, "dates">, date: Date): boolean {
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const md = `${mm}-${dd}`;
+  const full = `${date.getFullYear()}-${md}`;
+  return (f.dates ?? []).some((d) => d === md || d === full);
+}

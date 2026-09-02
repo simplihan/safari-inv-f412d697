@@ -25,6 +25,7 @@ import { Route as AppPendingRouteImport } from './routes/app.pending'
 import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
 import { Route as AppMonthlyRouteImport } from './routes/app.monthly'
 import { Route as AppMonitoringRouteImport } from './routes/app.monitoring'
+import { Route as AppFestivalsRouteImport } from './routes/app.festivals'
 import { Route as AppDepartmentsRouteImport } from './routes/app.departments'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppCommonRouteImport } from './routes/app.common'
@@ -119,6 +120,11 @@ const AppMonitoringRoute = AppMonitoringRouteImport.update({
   path: '/monitoring',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFestivalsRoute = AppFestivalsRouteImport.update({
+  id: '/festivals',
+  path: '/festivals',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDepartmentsRoute = AppDepartmentsRouteImport.update({
   id: '/departments',
   path: '/departments',
@@ -203,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/app/common': typeof AppCommonRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
+  '/app/festivals': typeof AppFestivalsRoute
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/monthly': typeof AppMonthlyRoute
   '/app/notifications': typeof AppNotificationsRoute
@@ -234,6 +241,7 @@ export interface FileRoutesByTo {
   '/app/common': typeof AppCommonRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
+  '/app/festivals': typeof AppFestivalsRoute
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/monthly': typeof AppMonthlyRoute
   '/app/notifications': typeof AppNotificationsRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/app/common': typeof AppCommonRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
+  '/app/festivals': typeof AppFestivalsRoute
   '/app/monitoring': typeof AppMonitoringRoute
   '/app/monthly': typeof AppMonthlyRoute
   '/app/notifications': typeof AppNotificationsRoute
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/app/common'
     | '/app/dashboard'
     | '/app/departments'
+    | '/app/festivals'
     | '/app/monitoring'
     | '/app/monthly'
     | '/app/notifications'
@@ -330,6 +340,7 @@ export interface FileRouteTypes {
     | '/app/common'
     | '/app/dashboard'
     | '/app/departments'
+    | '/app/festivals'
     | '/app/monitoring'
     | '/app/monthly'
     | '/app/notifications'
@@ -361,6 +372,7 @@ export interface FileRouteTypes {
     | '/app/common'
     | '/app/dashboard'
     | '/app/departments'
+    | '/app/festivals'
     | '/app/monitoring'
     | '/app/monthly'
     | '/app/notifications'
@@ -511,6 +523,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMonitoringRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/festivals': {
+      id: '/app/festivals'
+      path: '/festivals'
+      fullPath: '/app/festivals'
+      preLoaderRoute: typeof AppFestivalsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/departments': {
       id: '/app/departments'
       path: '/departments'
@@ -612,6 +631,7 @@ interface AppRouteChildren {
   AppCommonRoute: typeof AppCommonRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDepartmentsRoute: typeof AppDepartmentsRoute
+  AppFestivalsRoute: typeof AppFestivalsRoute
   AppMonitoringRoute: typeof AppMonitoringRoute
   AppMonthlyRoute: typeof AppMonthlyRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
@@ -629,6 +649,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCommonRoute: AppCommonRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDepartmentsRoute: AppDepartmentsRoute,
+  AppFestivalsRoute: AppFestivalsRoute,
   AppMonitoringRoute: AppMonitoringRoute,
   AppMonthlyRoute: AppMonthlyRoute,
   AppNotificationsRoute: AppNotificationsRoute,
