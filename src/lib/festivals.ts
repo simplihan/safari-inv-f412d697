@@ -20,7 +20,7 @@ export function countryFlag(country: string, fallback = "🎉"): string {
   return COUNTRY_FLAGS[country] ?? fallback;
 }
 
-export function festivalDisplayEmoji(festival: Pick<Festival, "name" | "country" | "emoji">): string {
+export function festivalDisplayEmoji(festival: { name: string; country: string; emoji: string }): string {
   return /independence day|national day/i.test(festival.name)
     ? countryFlag(festival.country, festival.emoji)
     : festival.emoji;
