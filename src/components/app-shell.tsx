@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { RemindersBell } from "@/components/reminders-bell";
 import { NotificationsProvider } from "@/hooks/use-notifications";
 import { BirthdayPrompt } from "@/components/birthday-prompt";
 
