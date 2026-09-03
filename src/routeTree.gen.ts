@@ -33,6 +33,7 @@ import { Route as AppChatSettingsRouteImport } from './routes/app.chat-settings'
 import { Route as AppChatRouteImport } from './routes/app.chat'
 import { Route as AppAuditRouteImport } from './routes/app.audit'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
+import { Route as LovableEmailEventsRouteImport } from './routes/lovable/email/events'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -160,6 +161,11 @@ const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   path: '/lovable/email/suppression',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LovableEmailEventsRoute = LovableEmailEventsRouteImport.update({
+  id: '/lovable/email/events',
+  path: '/lovable/email/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/app/staff': typeof AppStaffRoute
   '/app/timeline': typeof AppTimelineRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/lovable/email/events': typeof LovableEmailEventsRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/hooks/monthly-reports': typeof ApiPublicHooksMonthlyReportsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/app/staff': typeof AppStaffRoute
   '/app/timeline': typeof AppTimelineRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/lovable/email/events': typeof LovableEmailEventsRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/hooks/monthly-reports': typeof ApiPublicHooksMonthlyReportsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -284,6 +292,7 @@ export interface FileRoutesById {
   '/app/staff': typeof AppStaffRoute
   '/app/timeline': typeof AppTimelineRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/lovable/email/events': typeof LovableEmailEventsRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/hooks/monthly-reports': typeof ApiPublicHooksMonthlyReportsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -318,6 +327,7 @@ export interface FileRouteTypes {
     | '/app/staff'
     | '/app/timeline'
     | '/email/unsubscribe'
+    | '/lovable/email/events'
     | '/lovable/email/suppression'
     | '/api/public/hooks/monthly-reports'
     | '/lovable/email/auth/preview'
@@ -350,6 +360,7 @@ export interface FileRouteTypes {
     | '/app/staff'
     | '/app/timeline'
     | '/email/unsubscribe'
+    | '/lovable/email/events'
     | '/lovable/email/suppression'
     | '/api/public/hooks/monthly-reports'
     | '/lovable/email/auth/preview'
@@ -382,6 +393,7 @@ export interface FileRouteTypes {
     | '/app/staff'
     | '/app/timeline'
     | '/email/unsubscribe'
+    | '/lovable/email/events'
     | '/lovable/email/suppression'
     | '/api/public/hooks/monthly-reports'
     | '/lovable/email/auth/preview'
@@ -400,6 +412,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  LovableEmailEventsRoute: typeof LovableEmailEventsRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   ApiPublicHooksMonthlyReportsRoute: typeof ApiPublicHooksMonthlyReportsRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -579,6 +592,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailSuppressionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/events': {
+      id: '/lovable/email/events'
+      path: '/lovable/email/events'
+      fullPath: '/lovable/email/events'
+      preLoaderRoute: typeof LovableEmailEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -671,6 +691,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  LovableEmailEventsRoute: LovableEmailEventsRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   ApiPublicHooksMonthlyReportsRoute: ApiPublicHooksMonthlyReportsRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
