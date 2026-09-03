@@ -252,6 +252,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Button>
           <span className="ml-2 font-semibold md:hidden">Pulse Safari</span>
           <div className="ml-auto flex items-center gap-1">
+            <RemindersBell />
             <NotificationsBell />
           </div>
         </header>
