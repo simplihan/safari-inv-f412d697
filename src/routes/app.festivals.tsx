@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2, Check, X, PartyPopper, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { countryFlag, festivalDisplayEmoji } from "@/lib/festivals";
 
 export const Route = createFileRoute("/app/festivals")({
   component: FestivalsPage,
@@ -108,8 +109,10 @@ function FestivalsPage() {
     const payload = {
       name,
       country: form.country,
-      flag: form.flag.trim() || "🎉",
-      emoji: form.emoji.trim() || "🎉",
+      flag: countryFlag(form.country, form.flag.trim() || "🎉"),
+      emoji: /independence day|national day/i.test(name)
+        ? countryFlag(form.country, form.emoji.trim() || "🎉")
+        : form.emoji.trim() || "🎉",
       greeting: form.greeting.trim(),
       dates,
     };
@@ -201,7 +204,10 @@ function FestivalsPage() {
                   <Label>Country</Label>
                   <select
                     value={form.country}
-                    onChange={(e) => setForm({ ...form, country: e.target.value })}
+                    onChange={(e) => {
+                      const country = e.target.value;
+                      setForm({ ...form, country, flag: countryFlag(country, form.flag) });
+                    }}
                     className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
                   >
                     {COUNTRIES.map((c) => (
@@ -277,11 +283,11 @@ function FestivalsPage() {
           <Card key={r.id} className="glass">
             <CardContent className="p-3 flex items-center gap-3">
               <div className="h-9 w-9 rounded-lg gradient-primary grid place-items-center text-lg">
-                <span>{r.emoji}</span>
+                <span>{festivalDisplayEmoji(r)}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate">
-                  {r.flag} {r.name}{" "}
+                  {countryFlag(r.country, r.flag)} {r.name}{" "}
                   <span className="text-xs text-muted-foreground">· {r.country}</span>
                 </p>
                 <p className="text-xs text-muted-foreground truncate">

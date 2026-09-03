@@ -9,6 +9,23 @@ export type Festival = {
   dates: string[];
 };
 
+const COUNTRY_FLAGS: Record<string, string> = {
+  India: "🇮🇳",
+  Nepal: "🇳🇵",
+  Philippines: "🇵🇭",
+  Qatar: "🇶🇦",
+};
+
+export function countryFlag(country: string, fallback = "🎉"): string {
+  return COUNTRY_FLAGS[country] ?? fallback;
+}
+
+export function festivalDisplayEmoji(festival: Pick<Festival, "name" | "country" | "emoji">): string {
+  return /independence day|national day/i.test(festival.name)
+    ? countryFlag(festival.country, festival.emoji)
+    : festival.emoji;
+}
+
 /**
  * Major festivals/holidays celebrated by the team.
  * Fixed-date events repeat every year via MM-DD entries handled in matching.
@@ -47,7 +64,7 @@ export const FESTIVALS: Festival[] = [
     name: "Indian Independence Day",
     country: "India",
     flag: "🇮🇳",
-    emoji: "🎆",
+    emoji: "🇮🇳",
     greeting: "Happy Independence Day to all our Indian colleagues!",
     dates: ["08-15"],
   },
@@ -94,7 +111,7 @@ export const FESTIVALS: Festival[] = [
     name: "Philippine Independence Day",
     country: "Philippines",
     flag: "🇵🇭",
-    emoji: "🎇",
+    emoji: "🇵🇭",
     greeting: "Maligayang Araw ng Kalayaan! Happy Independence Day.",
     dates: ["06-12"],
   },
