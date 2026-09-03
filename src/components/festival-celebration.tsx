@@ -3,7 +3,13 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { FESTIVALS, matchesToday, type Festival } from "@/lib/festivals";
+import {
+  FESTIVALS,
+  countryFlag,
+  festivalDisplayEmoji,
+  matchesToday,
+  type Festival,
+} from "@/lib/festivals";
 
 const COLORS = ["#6366f1", "#f59e0b", "#ef4444", "#10b981", "#ec4899", "#38bdf8"];
 
@@ -55,7 +61,7 @@ export function FestivalCelebration() {
           id: f.id,
           name: f.name,
           country: f.country,
-          flag: f.flag,
+          flag: f.flag || countryFlag(f.country),
           emoji: f.emoji,
           greeting: f.greeting ?? "",
           dates: f.dates ?? [],
@@ -107,13 +113,13 @@ export function FestivalCelebration() {
             transition={{ duration: 1.6, repeat: Infinity }}
             className="text-5xl"
           >
-            {items.map((f) => f.emoji).join(" ")}
+            {items.map(festivalDisplayEmoji).join(" ")}
           </motion.div>
           <div className="space-y-3">
             {items.map((f) => (
               <div key={f.id} className="space-y-1">
                 <h2 className="text-2xl font-bold tracking-tight">
-                  {f.flag} {f.name}
+                  {countryFlag(f.country, f.flag)} {f.name}
                 </h2>
                 <p className="text-sm text-muted-foreground">{f.greeting}</p>
               </div>
