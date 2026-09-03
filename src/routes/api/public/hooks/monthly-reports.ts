@@ -1,18 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
-import * as React from "react";
-import { render as renderAsync } from "@react-email/components";
-import { TEMPLATES } from "@/lib/email-templates/registry";
-
-const SITE_NAME = "safari-inv";
-const SENDER_DOMAIN = "notify.simplihan.com";
-const FROM_DOMAIN = "notify.simplihan.com";
-
-function genToken() {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
+import { EmailAPIError } from "@lovable.dev/email-js";
+import { sendTemplateEmail } from "@/lib/email-templates/send-email";
 
 function isAuthorizedScheduler(request: Request, serviceKey: string) {
   const auth = request.headers.get("authorization") ?? "";
@@ -76,9 +65,7 @@ export const Route = createFileRoute("/api/public/hooks/monthly-reports")({
         const { data: profs } = await sb.from("profiles").select("id, full_name, department");
         const profById: Record<string, any> = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p]));
 
-        const enqueued: string[] = [];
-        const template = TEMPLATES["monthly-report"];
-        if (!template) return Response.json({ error: "template_missing" }, { status: 500 });
+        const sent: string[] = [];
 
         for (const d of depts ?? []) {
           const deptRows = (rows ?? []).filter((r: any) => profById[r.user_id]?.department === d.name);
@@ -105,74 +92,74 @@ export const Route = createFileRoute("/api/public/hooks/monthly-reports")({
             ? overrides.map((email) => ({ id: email.toLowerCase(), email, department: d.name }))
             // Default: admins + managers whose profile.department matches (or no dept = global admin)
             : (adminProfiles ?? []).filter((p: any) => !p.department || p.department === d.name);
+
+          const templateData = {
+            siteName: "Pulse Safari",
+            department: d.name,
+            monthLabel,
+            subject: d.monthly_report_subject || undefined,
+            totalSessions,
+            totalMinutes,
+            topStaff,
+          };
+
           for (const rcpt of recipients) {
             if (!rcpt.email) continue;
-            const idem = `monthly-${d.id}-${start.toISOString().slice(0, 7)}-${rcpt.id}`;
-            const normalized = rcpt.email.toLowerCase();
+            const idem = `monthly-report-${d.id}-${start.toISOString().slice(0, 7)}-${rcpt.id}`;
 
-            // Suppression check
-            const { data: sup } = await sb.from("suppressed_emails").select("email").eq("email", normalized).maybeSingle();
-            if (sup) continue;
-
-            // Unsubscribe token (reuse if exists)
-            const { data: existing } = await sb
-              .from("email_unsubscribe_tokens").select("token, used_at").eq("email", normalized).maybeSingle();
-            let unsubscribeToken: string;
-            if (existing && !existing.used_at) {
-              unsubscribeToken = existing.token;
-            } else if (!existing) {
-              const token = genToken();
-              const { error: tokErr } = await sb
-                .from("email_unsubscribe_tokens").insert({ email: normalized, token });
-              if (tokErr) continue;
-              unsubscribeToken = token;
-            } else { continue; }
-
-            const templateData = {
-              siteName: "Pulse Safari",
-              department: d.name,
-              monthLabel,
-              subject: d.monthly_report_subject || undefined,
-              totalSessions,
-              totalMinutes,
-              topStaff,
+            const logOutcome = async (
+              status: "sent" | "suppressed" | "failed",
+              errorMessage?: string
+            ) => {
+              const { error } = await sb.from("email_send_log").insert({
+                message_id: null,
+                template_name: "monthly-report",
+                recipient_email: rcpt.email,
+                status,
+                error_message: errorMessage ?? null,
+              });
+              if (error) {
+                console.error("Failed to write email_send_log", {
+                  code: error.code,
+                  message: error.message,
+                });
+              }
             };
-            const element = React.createElement(template.component, templateData);
-            const html = await renderAsync(element);
-            const text = await renderAsync(element, { plainText: true });
-            const subject = typeof template.subject === "function"
-              ? template.subject(templateData) : template.subject;
-            const messageId = crypto.randomUUID();
 
-            await sb.from("email_send_log").insert({
-              message_id: messageId,
-              template_name: "monthly-report",
-              recipient_email: rcpt.email,
-              status: "pending",
-            });
-
-            const { error: enqErr } = await sb.rpc("enqueue_email", {
-              queue_name: "transactional_emails",
-              payload: {
-                message_id: messageId,
-                to: rcpt.email,
-                from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-                sender_domain: SENDER_DOMAIN,
-                subject,
-                html,
-                text,
-                purpose: "transactional",
-                label: "monthly-report",
-                idempotency_key: idem,
-                unsubscribe_token: unsubscribeToken,
-                queued_at: new Date().toISOString(),
-              },
-            });
-            if (!enqErr) enqueued.push(idem);
+            // One retry after the rate-limit cooldown Lovable reports.
+            for (let attempt = 0; attempt < 2; attempt++) {
+              try {
+                const result = await sendTemplateEmail("monthly-report", rcpt.email, {
+                  templateData,
+                  idempotencyKey: idem,
+                });
+                if (result.sent) {
+                  await logOutcome("sent");
+                  sent.push(idem);
+                } else {
+                  await logOutcome("suppressed", "Recipient is suppressed");
+                }
+                break;
+              } catch (error) {
+                if (
+                  attempt === 0 &&
+                  error instanceof EmailAPIError &&
+                  error.status === 429
+                ) {
+                  const waitSeconds = error.retryAfterSeconds ?? 60;
+                  await new Promise((r) => setTimeout(r, waitSeconds * 1000));
+                  continue;
+                }
+                const msg = error instanceof Error ? error.message : String(error);
+                console.error("Monthly report send failed", { message: msg });
+                await logOutcome("failed", msg.slice(0, 1000));
+                break;
+              }
+            }
           }
         }
 
-        return Response.json({ ok: true, month: monthLabel, enqueued: enqueued.length });
+        return Response.json({ ok: true, month: monthLabel, sent: sent.length });
       },
     },
   },

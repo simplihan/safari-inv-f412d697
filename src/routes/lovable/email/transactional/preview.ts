@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { render as renderAsync } from "@react-email/components"
+import { render } from '@react-email/render'
 import { createFileRoute } from '@tanstack/react-router'
 import { TEMPLATES } from '@/lib/email-templates/registry'
 
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/lovable/email/transactional/preview")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = process.env.LOVABLE_API_KEY
+        const apiKey = process.env['LOVABLE_API_KEY']
         if (!apiKey) {
           return Response.json(
             { error: 'Server configuration error' },
@@ -51,7 +51,7 @@ export const Route = createFileRoute("/lovable/email/transactional/preview")({
           }
 
           try {
-            const html = await renderAsync(
+            const html = await render(
               React.createElement(entry.component, entry.previewData)
             )
             const resolvedSubject =
