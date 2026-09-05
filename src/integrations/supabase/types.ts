@@ -618,15 +618,6 @@ export type Database = {
       cleanup_old_break_logs: { Args: never; Returns: undefined }
       cleanup_old_login_events: { Args: never; Returns: undefined }
       cleanup_old_messages: { Args: never; Returns: undefined }
-      delete_email: {
-        Args: { message_id: number; queue_name: string }
-        Returns: boolean
-      }
-      email_queue_dispatch: { Args: never; Returns: undefined }
-      enqueue_email: {
-        Args: { payload: Json; queue_name: string }
-        Returns: number
-      }
       get_email_by_sgc: { Args: { _sgc: string }; Returns: string }
       has_edit_permission: {
         Args: {
@@ -680,23 +671,6 @@ export type Database = {
         Args: never
         Returns: {
           user_id: string
-        }[]
-      }
-      move_to_dlq: {
-        Args: {
-          dlq_name: string
-          message_id: number
-          payload: Json
-          source_queue: string
-        }
-        Returns: number
-      }
-      read_email_batch: {
-        Args: { batch_size: number; queue_name: string; vt: number }
-        Returns: {
-          message: Json
-          msg_id: number
-          read_ct: number
         }[]
       }
       registration_identity_taken: {
