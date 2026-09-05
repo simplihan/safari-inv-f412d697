@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { IN, NP, PH, QA } from "country-flag-icons/react/3x2";
 import { supabase } from "@/integrations/supabase/client";
 import {
   FESTIVALS,
@@ -11,27 +10,9 @@ import {
   matchesToday,
   type Festival,
 } from "@/lib/festivals";
+import { CountryFlag, isNationalDay } from "@/components/country-flag";
 
 const COLORS = ["#6366f1", "#f59e0b", "#ef4444", "#10b981", "#ec4899", "#38bdf8"];
-
-const FLAG_COMPONENTS = {
-  India: IN,
-  Nepal: NP,
-  Philippines: PH,
-  Qatar: QA,
-};
-
-function CountryFlag({ country, fallback }: { country: string; fallback: string }) {
-  const Flag = FLAG_COMPONENTS[country as keyof typeof FLAG_COMPONENTS];
-  if (!Flag) return <span aria-label={`${country} flag`}>{fallback}</span>;
-
-  return (
-    <Flag
-      title={`${country} flag`}
-      className="inline-block h-6 w-9 shrink-0 rounded-sm border border-border object-cover align-middle shadow-sm"
-    />
-  );
-}
 
 function Sparkles() {
   const pieces = useMemo(
@@ -137,7 +118,9 @@ export function FestivalCelebration() {
               {items.map((festival) => (
                 <span key={festival.id} className="inline-flex items-center gap-2">
                   <CountryFlag country={festival.country} fallback={festival.flag} />
-                  <span>{festivalDisplayEmoji(festival)}</span>
+                  {!isNationalDay(festival.name) && (
+                    <span>{festivalDisplayEmoji(festival)}</span>
+                  )}
                 </span>
               ))}
             </span>
