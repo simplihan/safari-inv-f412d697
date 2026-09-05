@@ -22,6 +22,7 @@ import {
 import { Plus, Pencil, Trash2, Check, X, PartyPopper, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { countryFlag, festivalDisplayEmoji } from "@/lib/festivals";
+import { CountryFlag, isNationalDay } from "@/components/country-flag";
 
 export const Route = createFileRoute("/app/festivals")({
   component: FestivalsPage,
