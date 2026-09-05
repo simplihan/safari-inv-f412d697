@@ -45,6 +45,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
+        "country-flag-icons": "^1.6.20",
         "date-fns": "^4.1.0",
         "embla-carousel-react": "^8.6.0",
         "emoji-picker-react": "^4.19.1",
@@ -780,6 +781,8 @@
     "core-js": ["core-js@3.49.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/core-js/-/core-js-3.49.0.tgz", {}, "sha512-es1U2+YTtzpwkxVLwAFdSpaIMyQaq0PBgm3YD1W3Qpsn1NAmO3KSgZfu+oGSWVu6NvLHoHCV/aYcsE5wiB7ALg=="],
 
     "cors": ["cors@2.8.6", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/cors/-/cors-2.8.6.tgz", { "dependencies": { "object-assign": "^4", "vary": "^1" } }, "sha512-tJtZBBHA6vjIAaF6EnIaq6laBBP9aq/Y3ouVJjEfoHbRBcHBAHYcMh/w8LDrk2PvIMMq8gmopa5D4V8RmbrxGw=="],
+
+    "country-flag-icons": ["country-flag-icons@1.6.20", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/country-flag-icons/-/country-flag-icons-1.6.20.tgz", {}, "sha512-py8JiEKzjhYw6HPJ0L7SxLgCYim36UPRTZX43/kqGueUCZLSvnrqAiwW8HtQibur7mdkFQUkjOgdK+o/9FBtaw=="],
 
     "crc-32": ["crc-32@1.2.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/crc-32/-/crc-32-1.2.2.tgz", { "bin": { "crc32": "bin/crc32.njs" } }, "sha512-ROmzCKrTnOwybPcJApAA6WBWij23HVfGVNKqqrZpuyZOHqK2CwHSvpGuyt/UNNvaIjEd8X5IFGp4Mh+Ie1IHJQ=="],
 
