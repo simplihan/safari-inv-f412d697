@@ -118,7 +118,9 @@ export function FestivalCelebration() {
               {items.map((festival) => (
                 <span key={festival.id} className="inline-flex items-center gap-2">
                   <CountryFlag country={festival.country} fallback={festival.flag} />
-                  <span>{festivalDisplayEmoji(festival)}</span>
+                  {!isNationalDay(festival.name) && (
+                    <span>{festivalDisplayEmoji(festival)}</span>
+                  )}
                 </span>
               ))}
             </span>
