@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { IN, NP, PH, QA } from "country-flag-icons/react/3x2";
 import { supabase } from "@/integrations/supabase/client";
 import {
   FESTIVALS,
@@ -12,6 +13,25 @@ import {
 } from "@/lib/festivals";
 
 const COLORS = ["#6366f1", "#f59e0b", "#ef4444", "#10b981", "#ec4899", "#38bdf8"];
+
+const FLAG_COMPONENTS = {
+  India: IN,
+  Nepal: NP,
+  Philippines: PH,
+  Qatar: QA,
+};
+
+function CountryFlag({ country, fallback }: { country: string; fallback: string }) {
+  const Flag = FLAG_COMPONENTS[country as keyof typeof FLAG_COMPONENTS];
+  if (!Flag) return <span aria-label={`${country} flag`}>{fallback}</span>;
+
+  return (
+    <Flag
+      title={`${country} flag`}
+      className="inline-block h-6 w-9 shrink-0 rounded-sm border border-border object-cover align-middle shadow-sm"
+    />
+  );
+}
 
 function Sparkles() {
   const pieces = useMemo(
@@ -113,13 +133,23 @@ export function FestivalCelebration() {
             transition={{ duration: 1.6, repeat: Infinity }}
             className="text-5xl"
           >
-            {items.map(festivalDisplayEmoji).join(" ")}
+            <span className="flex flex-wrap items-center justify-center gap-3">
+              {items.map((festival) => (
+                <span key={festival.id} className="inline-flex items-center gap-2">
+                  <CountryFlag country={festival.country} fallback={festival.flag} />
+                  <span>{festivalDisplayEmoji(festival)}</span>
+                </span>
+              ))}
+            </span>
           </motion.div>
           <div className="space-y-3">
             {items.map((f) => (
               <div key={f.id} className="space-y-1">
                 <h2 className="text-2xl font-bold tracking-tight">
-                  {countryFlag(f.country, f.flag)} {f.name}
+                  <span className="inline-flex flex-wrap items-center justify-center gap-2">
+                    <CountryFlag country={f.country} fallback={countryFlag(f.country, f.flag)} />
+                    <span>{f.name}</span>
+                  </span>
                 </h2>
                 <p className="text-sm text-muted-foreground">{f.greeting}</p>
               </div>
