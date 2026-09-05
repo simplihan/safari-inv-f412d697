@@ -283,12 +283,17 @@ function FestivalsPage() {
         {rows.map((r) => (
           <Card key={r.id} className="glass">
             <CardContent className="p-3 flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg gradient-primary grid place-items-center text-lg">
-                <span>{festivalDisplayEmoji(r)}</span>
+              <div className="h-9 w-9 rounded-lg gradient-primary grid place-items-center">
+                {isNationalDay(r.name) ? (
+                  <CountryFlag country={r.country} className="h-6 w-8 rounded-sm border border-white/30 object-cover" />
+                ) : (
+                  <span className="text-lg">{festivalDisplayEmoji(r)}</span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">
-                  {countryFlag(r.country, r.flag)} {r.name}{" "}
+                <p className="font-medium truncate inline-flex items-center gap-1.5">
+                  <CountryFlag country={r.country} fallback={countryFlag(r.country, r.flag)} className="inline-block h-4 w-6 shrink-0 rounded-sm border border-border object-cover" />
+                  <span>{r.name}</span>{" "}
                   <span className="text-xs text-muted-foreground">· {r.country}</span>
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
