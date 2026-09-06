@@ -1,6 +1,6 @@
 import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -10,10 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, LogIn, Clock, Activity, Coffee, Users as UsersIcon } from "lucide-react";
+import { LogOut, LogIn, Clock, Activity, Coffee, Users as UsersIcon, CalendarDays, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import { liveDuration, fmtDuration, fmtTime, reasonLabel, toDbReason } from "@/lib/format";
 import { Monitor, Smartphone, Tablet } from "lucide-react";
+import { CountryFlag } from "@/components/country-flag";
+import { FESTIVALS, countryFlag, festivalDisplayEmoji } from "@/lib/festivals";
 
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
 
