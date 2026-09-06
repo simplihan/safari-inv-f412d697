@@ -158,7 +158,7 @@ function MonthlyReports() {
           total_minutes: u.mins,
           sessions: u.sessions,
           avg_minutes: u.sessions ? Math.round(u.mins / u.sessions) : 0,
-          avg_per_day: Math.round(u.mins / days),
+          avg_per_day: days > 0 ? Math.round(u.mins / days) : 0,
           category: categorize(u.mins, days),
         };
       })
