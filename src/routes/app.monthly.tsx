@@ -31,7 +31,7 @@ function elapsedDays(ym: string) {
   const now = new Date();
   const lastDay =
     y === now.getUTCFullYear() && m === now.getUTCMonth() + 1
-      ? now.getUTCDate()
+      ? Math.max(now.getUTCDate() - 1, 0)
       : daysInMonth(ym);
   // Exclude Fridays (weekly day off). getUTCDay(): 5 = Friday.
   let count = 0;
