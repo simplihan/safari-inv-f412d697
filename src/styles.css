@@ -148,11 +148,11 @@
   --sidebar-ring: oklch(0.7 0.2 260);
 
   --gradient-primary: linear-gradient(135deg, oklch(0.6 0.22 265), oklch(0.72 0.2 250));
-  --gradient-surface: linear-gradient(135deg, oklch(0.30 0.06 265), oklch(0.26 0.07 280));
-  --gradient-hero: radial-gradient(circle at 20% 0%, oklch(0.55 0.25 265 / 0.35), transparent 50%),
-                    radial-gradient(circle at 80% 100%, oklch(0.50 0.22 290 / 0.30), transparent 50%);
-  --shadow-glass: 0 8px 32px oklch(0 0 0 / 0.35);
-  --shadow-elevated: 0 20px 50px -10px oklch(0 0 0 / 0.45);
+  --gradient-surface: linear-gradient(135deg, oklch(0.40 0.06 265), oklch(0.35 0.07 280));
+  --gradient-hero: radial-gradient(circle at 20% 0%, oklch(0.6 0.22 265 / 0.30), transparent 50%),
+                    radial-gradient(circle at 80% 100%, oklch(0.55 0.2 290 / 0.25), transparent 50%);
+  --shadow-glass: 0 8px 32px oklch(0 0 0 / 0.25);
+  --shadow-elevated: 0 20px 50px -10px oklch(0 0 0 / 0.35);
 }
 
 @layer base {
