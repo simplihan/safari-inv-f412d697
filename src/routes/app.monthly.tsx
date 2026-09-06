@@ -140,6 +140,8 @@ function MonthlyReports() {
     for (const r of rows) {
       const p = profiles[r.user_id];
       if (!inScope(p?.department)) continue;
+      // Exclude Fridays entirely (weekly day off): 5 = Friday.
+      if (new Date(r.out_time).getUTCDay() === 5) continue;
       const k = r.user_id;
       if (!byUser[k]) byUser[k] = { id: k, mins: 0, sessions: 0 };
       byUser[k].mins += r.duration_minutes ?? 0;
