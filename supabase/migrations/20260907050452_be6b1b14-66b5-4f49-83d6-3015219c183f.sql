@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.auto_add_lunch_breaks() FROM PUBLIC, anon, authenticated;
