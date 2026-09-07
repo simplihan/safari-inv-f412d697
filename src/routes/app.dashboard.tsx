@@ -189,6 +189,15 @@ function Dashboard() {
 
   const totalMinToday = today.filter((t) => t.duration_minutes).reduce((s, t) => s + (t.duration_minutes ?? 0), 0);
 
+  const monthSummary = useMemo(() => {
+    const nonFriday = monthLogs.filter((b) => new Date(b.out_time).getDay() !== 5);
+    const totalMin = nonFriday.reduce((s, b) => s + (b.duration_minutes ?? 0), 0);
+    const days = new Set(nonFriday.map((b) => new Date(b.out_time).toDateString()));
+    const activeDays = days.size;
+    return { totalMin, activeDays, avg: activeDays ? Math.round(totalMin / activeDays) : 0 };
+  }, [monthLogs]);
+
+
   return (
     <div className="space-y-8">
       <div>
