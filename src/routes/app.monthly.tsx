@@ -252,7 +252,7 @@ function MonthlyReports() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Monthly Reports</h1>
           <p className="text-muted-foreground mt-1">
-            Activity categorised by average break time per day. Low = ideal (≤ 60 min/day), Medium = 61–90, High &gt; 91 min/day.
+            Activity categorised by average break time per day. Low = ideal (≤ 90 min/day), Medium = 91–120, High > 121 min/day.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-end">
