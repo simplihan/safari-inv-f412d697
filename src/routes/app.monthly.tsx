@@ -17,9 +17,9 @@ import { useScopedDepartments } from "@/hooks/use-scoped-departments";
 export const Route = createFileRoute("/app/monthly")({ component: MonthlyReports });
 
 // Categorization thresholds (average break minutes per day in the month)
-// Low = ideal (<= 90 min/day), Medium = watch, High = needs attention.
-const LOW_MAX = 60;   // <= 60 min / day
-const MED_MAX = 90;  // <= 90 min / day
+// Low = ideal (<= 90 min/day), Medium = watch (91–120), High = needs attention (> 121).
+const LOW_MAX = 90;   // <= 90 min / day
+const MED_MAX = 120;  // <= 120 min / day
 
 function daysInMonth(ym: string) {
   const [y, m] = ym.split("-").map(Number);
