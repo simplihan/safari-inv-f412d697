@@ -34,7 +34,7 @@ import { NotificationsProvider } from "@/hooks/use-notifications";
 import { BirthdayPrompt } from "@/components/birthday-prompt";
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { profile, roles, signOut, canManage, isStaff, isAdmin, isManager, user, hasPermission } = useAuth();
+  const { profile, roles, signOut, canManage, isStaff, isAdmin, isManager, isSupervisor, user, hasPermission } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
