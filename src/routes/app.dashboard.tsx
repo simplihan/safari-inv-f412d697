@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { liveDuration, fmtDuration, fmtTime, reasonLabel, toDbReason } from "@/lib/format";
 import { Monitor, Smartphone, Tablet } from "lucide-react";
 import { CountryFlag } from "@/components/country-flag";
-import { FESTIVALS, countryFlag, festivalDisplayEmoji } from "@/lib/festivals";
+import { FESTIVALS } from "@/lib/festivals";
 
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
 
