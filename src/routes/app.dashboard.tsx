@@ -285,7 +285,51 @@ function Dashboard() {
         </Card>
       </motion.div>
 
+      {/* Monthly summary */}
+      <Card className="glass border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" /> This month's summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Total time logged</p>
+            <p className="text-2xl font-bold mt-1">{fmtDuration(monthSummary.totalMin)}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {monthSummary.activeDays} active {monthSummary.activeDays === 1 ? "day" : "days"} (Fridays excluded)
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Average per day</p>
+            <p className="text-2xl font-bold mt-1">{fmtDuration(monthSummary.avg)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Based on your active days</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <PartyPopper className="h-3.5 w-3.5" /> Upcoming festivals
+            </p>
+            {upcoming.length === 0 ? (
+              <p className="text-sm text-muted-foreground mt-2">None in the next 60 days.</p>
+            ) : (
+              <ul className="mt-2 space-y-1.5">
+                {upcoming.map((f, i) => (
+                  <li key={`${f.name}-${i}`} className="flex items-center gap-2 text-sm">
+                    <CountryFlag country={f.country} className="inline-block h-4 w-6 shrink-0 rounded-sm border border-border" />
+                    <span className="truncate">{f.name}</span>
+                    <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">
+                      {f.date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {canManage && (
+
         <Card className="glass border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
