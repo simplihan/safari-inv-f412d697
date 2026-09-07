@@ -297,7 +297,7 @@ function Dashboard() {
             <p className="text-xs text-muted-foreground">Total time logged</p>
             <p className="text-2xl font-bold mt-1">{fmtDuration(monthSummary.totalMin)}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {monthSummary.activeDays} active {monthSummary.activeDays === 1 ? "day" : "days"} (Fridays excluded)
+              {monthSummary.activeDays} active {monthSummary.activeDays === 1 ? "day" : "days"}
             </p>
           </div>
           <div>
