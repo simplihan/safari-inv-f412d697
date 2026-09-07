@@ -21,8 +21,9 @@ import { useDepartments } from "@/hooks/use-departments";
 export const Route = createFileRoute("/app/staff")({ component: Staff });
 
 function Staff() {
-  const { canManage, isAdmin, isManager, hasPermission, hasEditPermission } = useAuth();
-  const allowed = canManage || hasPermission("manage_staff");
+  const { isAdmin, isManager, isSupervisor, hasPermission, hasEditPermission } = useAuth();
+  const allowed = isAdmin || isManager || (!isSupervisor && hasPermission("manage_staff"));
+
   const canEdit = isAdmin || isManager || hasEditPermission("manage_staff");
   const setActive = useServerFn(adminSetActive);
   const [rows, setRows] = useState<any[]>([]);
