@@ -66,6 +66,17 @@ function Dashboard() {
     setToday(list);
     setActive(list.find((b) => b.status === "out") ?? null);
 
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const { data: mData } = await supabase
+      .from("break_logs")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("out_time", monthStart.toISOString())
+      .order("out_time", { ascending: false });
+    setMonthLogs((mData ?? []) as BreakLog[]);
+
     if (canManage) {
       const { count } = await supabase
         .from("break_logs")
@@ -74,6 +85,45 @@ function Dashboard() {
       setOutNow(count ?? 0);
     }
   };
+
+  // Upcoming festivals (next 60 days)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("festivals")
+        .select("name, country, emoji, dates, active")
+        .eq("active", true);
+      if (cancelled) return;
+      const source =
+        data && data.length
+          ? (data as any[])
+          : FESTIVALS.map((f) => ({ name: f.name, country: f.country, emoji: f.emoji, dates: f.dates }));
+      const today0 = new Date();
+      today0.setHours(0, 0, 0, 0);
+      const horizon = new Date(today0.getTime() + 60 * 86400000);
+      const out: { name: string; country: string; emoji: string; date: Date }[] = [];
+      for (const f of source) {
+        for (const raw of (f.dates ?? []) as string[]) {
+          const candidates = raw.length === 5
+            ? [`${today0.getFullYear()}-${raw}`, `${today0.getFullYear() + 1}-${raw}`]
+            : [raw];
+          for (const c of candidates) {
+            const [y, m, d] = c.split("-").map(Number);
+            if (!y || !m || !d) continue;
+            const dt = new Date(y, m - 1, d);
+            if (dt >= today0 && dt <= horizon) out.push({ name: f.name, country: f.country, emoji: f.emoji, date: dt });
+          }
+        }
+      }
+      out.sort((a, b) => a.date.getTime() - b.date.getTime());
+      setUpcoming(out.slice(0, 3));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
 
   useEffect(() => {
     load();
