@@ -42,6 +42,9 @@ function Dashboard() {
   const [tick, setTick] = useState(0);
   const [outNow, setOutNow] = useState(0);
   const [logins, setLogins] = useState<any[]>([]);
+  const [monthLogs, setMonthLogs] = useState<BreakLog[]>([]);
+  const [upcoming, setUpcoming] = useState<{ name: string; country: string; emoji: string; date: Date }[]>([]);
+
 
   // tick for live timer
   useEffect(() => {
