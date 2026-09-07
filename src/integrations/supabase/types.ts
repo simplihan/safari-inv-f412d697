@@ -613,6 +613,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_add_lunch_breaks: { Args: never; Returns: undefined }
       auto_close_stale_breaks: { Args: never; Returns: undefined }
       cleanup_old_audit_logs: { Args: never; Returns: undefined }
       cleanup_old_break_logs: { Args: never; Returns: undefined }
