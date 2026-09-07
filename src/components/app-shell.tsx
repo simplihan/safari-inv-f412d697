@@ -34,7 +34,7 @@ import { NotificationsProvider } from "@/hooks/use-notifications";
 import { BirthdayPrompt } from "@/components/birthday-prompt";
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { profile, roles, signOut, canManage, isStaff, isAdmin, isManager, user, hasPermission } = useAuth();
+  const { profile, roles, signOut, canManage, isStaff, isAdmin, isManager, isSupervisor, user, hasPermission } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
@@ -108,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/app/monitoring", label: "Live Monitoring", icon: Activity, show: canManage || hasPermission("view_monitoring") },
     { to: "/app/timeline", label: "My Activity", icon: History, show: isStaff },
     { to: "/app/pending", label: "Pending Requests", icon: UserCheck, show: canManage || hasPermission("view_pending") },
-    { to: "/app/staff", label: "Staff Management", icon: Users, show: canManage || hasPermission("manage_staff") },
+    { to: "/app/staff", label: "Staff Management", icon: Users, show: (isAdmin || isManager) || (!isSupervisor && hasPermission("manage_staff")) },
     { to: "/app/reports", label: "Reports", icon: FileBarChart, show: canManage || hasPermission("view_reports") },
     { to: "/app/monthly", label: "Monthly Reports", icon: CalendarRange, show: canManage || hasPermission("view_monthly") },
     { to: "/app/notifications", label: "Notifications", icon: Megaphone, show: isAdmin || isManager || hasPermission("send_notifications") },

@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { liveDuration, fmtDuration, fmtTime, reasonLabel, toDbReason } from "@/lib/format";
 import { Monitor, Smartphone, Tablet } from "lucide-react";
 import { CountryFlag } from "@/components/country-flag";
-import { FESTIVALS, countryFlag, festivalDisplayEmoji } from "@/lib/festivals";
+import { FESTIVALS } from "@/lib/festivals";
 
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
 
@@ -42,6 +42,9 @@ function Dashboard() {
   const [tick, setTick] = useState(0);
   const [outNow, setOutNow] = useState(0);
   const [logins, setLogins] = useState<any[]>([]);
+  const [monthLogs, setMonthLogs] = useState<BreakLog[]>([]);
+  const [upcoming, setUpcoming] = useState<{ name: string; country: string; emoji: string; date: Date }[]>([]);
+
 
   // tick for live timer
   useEffect(() => {
@@ -63,6 +66,17 @@ function Dashboard() {
     setToday(list);
     setActive(list.find((b) => b.status === "out") ?? null);
 
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const { data: mData } = await supabase
+      .from("break_logs")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("out_time", monthStart.toISOString())
+      .order("out_time", { ascending: false });
+    setMonthLogs((mData ?? []) as BreakLog[]);
+
     if (canManage) {
       const { count } = await supabase
         .from("break_logs")
@@ -71,6 +85,45 @@ function Dashboard() {
       setOutNow(count ?? 0);
     }
   };
+
+  // Upcoming festivals (next 60 days)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("festivals")
+        .select("name, country, emoji, dates, active")
+        .eq("active", true);
+      if (cancelled) return;
+      const source =
+        data && data.length
+          ? (data as any[])
+          : FESTIVALS.map((f) => ({ name: f.name, country: f.country, emoji: f.emoji, dates: f.dates }));
+      const today0 = new Date();
+      today0.setHours(0, 0, 0, 0);
+      const horizon = new Date(today0.getTime() + 60 * 86400000);
+      const out: { name: string; country: string; emoji: string; date: Date }[] = [];
+      for (const f of source) {
+        for (const raw of (f.dates ?? []) as string[]) {
+          const candidates = raw.length === 5
+            ? [`${today0.getFullYear()}-${raw}`, `${today0.getFullYear() + 1}-${raw}`]
+            : [raw];
+          for (const c of candidates) {
+            const [y, m, d] = c.split("-").map(Number);
+            if (!y || !m || !d) continue;
+            const dt = new Date(y, m - 1, d);
+            if (dt >= today0 && dt <= horizon) out.push({ name: f.name, country: f.country, emoji: f.emoji, date: dt });
+          }
+        }
+      }
+      out.sort((a, b) => a.date.getTime() - b.date.getTime());
+      setUpcoming(out.slice(0, 3));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
 
   useEffect(() => {
     load();
@@ -135,6 +188,15 @@ function Dashboard() {
   };
 
   const totalMinToday = today.filter((t) => t.duration_minutes).reduce((s, t) => s + (t.duration_minutes ?? 0), 0);
+
+  const monthSummary = useMemo(() => {
+    const nonFriday = monthLogs.filter((b) => new Date(b.out_time).getDay() !== 5);
+    const totalMin = nonFriday.reduce((s, b) => s + (b.duration_minutes ?? 0), 0);
+    const days = new Set(nonFriday.map((b) => new Date(b.out_time).toDateString()));
+    const activeDays = days.size;
+    return { totalMin, activeDays, avg: activeDays ? Math.round(totalMin / activeDays) : 0 };
+  }, [monthLogs]);
+
 
   return (
     <div className="space-y-8">
@@ -223,7 +285,51 @@ function Dashboard() {
         </Card>
       </motion.div>
 
+      {/* Monthly summary */}
+      <Card className="glass border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" /> This month's summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Total time logged</p>
+            <p className="text-2xl font-bold mt-1">{fmtDuration(monthSummary.totalMin)}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {monthSummary.activeDays} active {monthSummary.activeDays === 1 ? "day" : "days"} (Fridays excluded)
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Average per day</p>
+            <p className="text-2xl font-bold mt-1">{fmtDuration(monthSummary.avg)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Based on your active days</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <PartyPopper className="h-3.5 w-3.5" /> Upcoming festivals
+            </p>
+            {upcoming.length === 0 ? (
+              <p className="text-sm text-muted-foreground mt-2">None in the next 60 days.</p>
+            ) : (
+              <ul className="mt-2 space-y-1.5">
+                {upcoming.map((f, i) => (
+                  <li key={`${f.name}-${i}`} className="flex items-center gap-2 text-sm">
+                    <CountryFlag country={f.country} className="inline-block h-4 w-6 shrink-0 rounded-sm border border-border" />
+                    <span className="truncate">{f.name}</span>
+                    <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">
+                      {f.date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {canManage && (
+
         <Card className="glass border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
