@@ -106,7 +106,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/app/departments", label: "Departments", icon: Building2, show: isAdmin },
     { to: "/app/festivals", label: "Festivals", icon: PartyPopper, show: isAdmin },
     { to: "/app/monitoring", label: "Live Monitoring", icon: Activity, show: canManage || hasPermission("view_monitoring") },
-    { to: "/app/timeline", label: "My Activity", icon: History, show: isStaff },
+    { to: "/app/timeline", label: "Activity", icon: History, show: true },
     { to: "/app/pending", label: "Pending Requests", icon: UserCheck, show: canManage || hasPermission("view_pending") },
     { to: "/app/staff", label: "Staff Management", icon: Users, show: (isAdmin || isManager) || (!isSupervisor && hasPermission("manage_staff")) },
     { to: "/app/reports", label: "Reports", icon: FileBarChart, show: canManage || hasPermission("view_reports") },
