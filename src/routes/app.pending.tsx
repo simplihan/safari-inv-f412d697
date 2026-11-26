@@ -9,11 +9,22 @@ import { Check, X, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { Navigate } from "@tanstack/react-router";
+import { RegistrationSwitch } from "@/components/registration-switch";
 
-export const Route = createFileRoute("/app/pending")({ component: Pending });
+export const Route = createFileRoute("/app/pending")({
+  component: Pending,
+  head: () => ({ meta: [
+    { title: "Pending requests | Pulse Safari" },
+    { name: "description", content: "Review department access requests and manage new registration availability in Pulse Safari." },
+    { property: "og:title", content: "Pending requests | Pulse Safari" },
+    { property: "og:description", content: "Review department access requests and manage new registration availability in Pulse Safari." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
+});
 
 function Pending() {
-  const { canManage, hasPermission, hasEditPermission } = useAuth();
+  const { canManage, isAdmin, hasPermission, hasEditPermission } = useAuth();
   const allowed = canManage || hasPermission("view_pending");
   const canDecide = canManage || hasEditPermission("view_pending") || hasEditPermission("manage_staff");
   const [rows, setRows] = useState<any[]>([]);
@@ -43,6 +54,7 @@ function Pending() {
         <h1 className="text-3xl font-bold tracking-tight">Pending requests</h1>
         <p className="text-muted-foreground mt-1">{rows.length} awaiting your review</p>
       </div>
+      {isAdmin && <RegistrationSwitch />}
       <div className="grid gap-3">
         {rows.map((r) => (
           <Card key={r.id} className="glass">

@@ -473,6 +473,21 @@ export type Database = {
         }
         Relationships: []
       }
+      registration_settings: {
+        Row: {
+          enabled: boolean
+          id: boolean
+        }
+        Insert: {
+          enabled?: boolean
+          id?: boolean
+        }
+        Update: {
+          enabled?: boolean
+          id?: boolean
+        }
+        Relationships: []
+      }
       reminders: {
         Row: {
           created_at: string
@@ -620,6 +635,7 @@ export type Database = {
       cleanup_old_login_events: { Args: never; Returns: undefined }
       cleanup_old_messages: { Args: never; Returns: undefined }
       get_email_by_sgc: { Args: { _sgc: string }; Returns: string }
+      get_registration_enabled: { Args: never; Returns: boolean }
       has_edit_permission: {
         Args: {
           _perm: Database["public"]["Enums"]["app_permission"]
@@ -683,6 +699,10 @@ export type Database = {
       }
       set_offline: { Args: never; Returns: undefined }
       set_online: { Args: never; Returns: undefined }
+      set_registration_enabled: {
+        Args: { _enabled: boolean }
+        Returns: boolean
+      }
       touch_last_seen: { Args: never; Returns: undefined }
     }
     Enums: {

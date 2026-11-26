@@ -10,12 +10,24 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDepartments } from "@/hooks/use-departments";
 import { toast } from "sonner";
+import { readRegistrationStatus, useRegistrationStatus } from "@/hooks/use-registration-status";
 
-export const Route = createFileRoute("/register")({ component: Register });
+export const Route = createFileRoute("/register")({
+  component: Register,
+  head: () => ({ meta: [
+    { title: "Request access | Pulse Safari" },
+    { name: "description", content: "Request a Pulse Safari account for your department." },
+    { property: "og:title", content: "Request access | Pulse Safari" },
+    { property: "og:description", content: "Request a Pulse Safari account for your department." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
+});
 
 function Register() {
   const navigate = useNavigate();
   const { names: deptNames } = useDepartments();
+  const { enabled, error: statusError, refresh } = useRegistrationStatus();
   const [form, setForm] = useState({
     full_name: "",
     sgc_id: "",
@@ -31,8 +43,20 @@ function Register() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (enabled !== true) return;
     if (!form.department) return toast.error("Select a department");
     setLoading(true);
+
+    try {
+      if (!(await readRegistrationStatus())) {
+        await refresh();
+        setLoading(false);
+        return toast.error("New access requests are currently paused.");
+      }
+    } catch {
+      setLoading(false);
+      return toast.error("Could not check access requests. Please try again.");
+    }
 
     // Block duplicate SGC ID / mobile before creating the account
     const { data: taken } = await (supabase.rpc as any)("registration_identity_taken", {
@@ -83,8 +107,11 @@ function Register() {
           <span className="font-semibold">Pulse Safari</span>
         </Link>
         <h1 className="text-2xl font-bold text-center">Request access</h1>
-        <p className="text-sm text-muted-foreground text-center mt-1">An admin or manager will approve your account.</p>
-        <form onSubmit={onSubmit} className="mt-6 grid grid-cols-2 gap-4">
+        <p className="text-sm text-muted-foreground text-center mt-1">
+          {enabled === true ? "An admin or manager will approve your account." : enabled === false ? "New access requests are currently paused. Please contact your administrator." : statusError ? "Could not check access requests." : "Checking access requests…"}
+        </p>
+        {statusError && <div className="mt-4 text-center"><Button variant="outline" onClick={() => void refresh()}>Retry</Button></div>}
+        {enabled === true && <form onSubmit={onSubmit} className="mt-6 grid grid-cols-2 gap-4">
           <div className="col-span-2"><Label>Full name</Label><Input required value={form.full_name} onChange={set("full_name")} className="mt-1" /></div>
           <div><Label>SGC ID</Label><Input required value={form.sgc_id} onChange={set("sgc_id")} className="mt-1" /></div>
           <div>
@@ -102,7 +129,7 @@ function Register() {
           <Button type="submit" disabled={loading} className="col-span-2 gradient-primary text-primary-foreground border-0">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit request"}
           </Button>
-        </form>
+        </form>}
         <p className="mt-6 text-sm text-center text-muted-foreground">
           Already approved? <Link to="/login" className="text-primary font-medium">Sign in</Link>
         </p>

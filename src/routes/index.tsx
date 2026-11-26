@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   component: Landing,
+  head: () => ({ meta: [
+    { title: "Pulse Safari | Break & activity tracking" },
+    { name: "description", content: "Pulse Safari brings together workforce break tracking, live monitoring and department access requests." },
+    { property: "og:title", content: "Pulse Safari | Break & activity tracking" },
+    { property: "og:description", content: "Pulse Safari brings together workforce break tracking, live monitoring and department access requests." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
 });
 
 function Landing() {
