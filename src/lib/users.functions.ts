@@ -24,7 +24,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", userId);
     const callerRoles = ((roleRows ?? []) as { role: string }[]).map((r) => r.role);
     if (!callerRoles.includes("admin")) {
-      if (data.role === "admin") throw new Error("Forbidden: only an admin can create admin accounts");
+      if (data.role === "admin" || data.role === "manager") throw new Error("Forbidden: only an admin can create admin or manager accounts");
 
       let allowed = callerRoles.includes("manager");
       let global = false;
@@ -272,6 +272,9 @@ async function requireStaffEditor(supabase: any, actorId: string, targetId: stri
   const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", actorId);
   const roles = ((roleRows ?? []) as { role: string }[]).map((r) => r.role);
   if (roles.includes("admin")) return;
+  if (actorId === targetId) throw new Error("Forbidden: you cannot change your own account");
+  const { data: actorProf } = await supabaseAdmin.from("profiles").select("status").eq("id", actorId).maybeSingle();
+  if (actorProf?.status !== "approved") throw new Error("Forbidden: account not approved");
 
   let globalScope = false;
   let allowed = roles.includes("manager") || roles.includes("supervisor");

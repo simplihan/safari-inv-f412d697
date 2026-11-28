@@ -29,6 +29,13 @@
       "when": 1795866849593,
       "tag": "0003_lock_registration_settings_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795867496177,
+      "tag": "0004_guard_permission_checks",
+      "breakpoints": true
     }
   ]
 }

@@ -3,20 +3,42 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-async function requireAdminOrManager(supabase: any, userId: string) {
+async function requireAdminOrManager(supabase: any, userId: string): Promise<boolean> {
   const { data } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
     .in("role", ["admin", "manager"]);
-  if (data && data.length > 0) return;
+  const roles = ((data ?? []) as { role: string }[]).map((r) => r.role);
+  if (roles.includes("admin")) return true;
+  const { data: prof } = await supabaseAdmin.from("profiles").select("status").eq("id", userId).maybeSingle();
+  if (prof?.status !== "approved") throw new Error("Forbidden: account not approved");
+  if (roles.length > 0) return false;
   // Individual edit-level grant on live monitoring confers the same ability.
   const { data: canEdit } = await supabase.rpc("has_edit_permission", {
     _user_id: userId,
     _perm: "view_monitoring",
   });
-  if (canEdit === true) return;
+  if (canEdit === true) return false;
   throw new Error("Forbidden: admin or manager role required");
+}
+
+/** Non-admins may only act on non-admin users they are allowed to see (same department or global grant). */
+async function requireCanManageUser(supabase: any, actorId: string, targetId: string) {
+  const isAdmin = await requireAdminOrManager(supabase, actorId);
+  if (isAdmin) return;
+  const { data: targetAdmin } = await supabaseAdmin
+    .from("user_roles").select("role").eq("user_id", targetId).eq("role", "admin").maybeSingle();
+  if (targetAdmin) throw new Error("Forbidden: cannot modify an admin's activity");
+  const { data: visible } = await supabase.rpc("list_visible_user_ids");
+  const ok = ((visible ?? []) as { user_id: string }[]).some((v) => v.user_id === targetId);
+  if (!ok) throw new Error("Forbidden: user is outside your department");
+}
+
+async function requireCanManageActivity(supabase: any, actorId: string, activityId: string) {
+  const { data: row } = await supabaseAdmin.from("break_logs").select("user_id").eq("id", activityId).maybeSingle();
+  if (!row) throw new Error("Activity not found.");
+  await requireCanManageUser(supabase, actorId, row.user_id);
 }
 
 
@@ -33,7 +55,7 @@ export const adminStartActivity = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await requireAdminOrManager(supabase, userId);
+    await requireCanManageUser(supabase, userId, data.user_id);
 
     const { data: open } = await supabaseAdmin
       .from("break_logs")
@@ -64,7 +86,7 @@ export const adminStopActivity = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ activity_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await requireAdminOrManager(supabase, userId);
+    await requireCanManageActivity(supabase, userId, data.activity_id);
 
     const { data: row } = await supabaseAdmin
       .from("break_logs")
@@ -113,7 +135,7 @@ export const adminUpdateActivity = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await requireAdminOrManager(context.supabase, context.userId);
+    await requireCanManageActivity(context.supabase, context.userId, data.activity_id);
     const { data: row } = await supabaseAdmin
       .from("break_logs")
       .select("out_time, in_time, status")
@@ -149,7 +171,7 @@ export const adminDeleteActivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ activity_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await requireAdminOrManager(context.supabase, context.userId);
+    await requireCanManageActivity(context.supabase, context.userId, data.activity_id);
     const { error } = await supabaseAdmin.from("break_logs").delete().eq("id", data.activity_id);
     if (error) throw new Error(error.message);
     return { ok: true };

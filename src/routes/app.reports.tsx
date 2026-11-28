@@ -114,16 +114,21 @@ function Reports() {
   if (!allowed) return <Navigate to="/app/dashboard" />;
 
   const exportCSV = () => {
+    const cell = (v: unknown) => {
+      let t = String(v ?? "");
+      if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+      return `"${t.replace(/"/g, '""')}"`;
+    };
     const header = ["Name", "Department", "Reason", "Remarks", "Out", "In", "Duration (min)", "Device"];
     const lines = [header.join(",")];
     scopedRows.forEach((r) => {
       const p = profiles[r.user_id];
       lines.push(
         [
-          `"${p?.full_name ?? ""}"`,
-          `"${p?.department ?? ""}"`,
-          r.reason,
-          `"${(r.remarks ?? "").replace(/"/g, "''")}"`,
+          cell(p?.full_name),
+          cell(p?.department),
+          cell(r.reason),
+          cell(r.remarks),
           r.out_time,
           r.in_time ?? "",
           r.duration_minutes ?? "",
