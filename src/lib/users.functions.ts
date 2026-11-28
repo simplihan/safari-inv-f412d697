@@ -327,3 +327,15 @@ async function requireStaffEditor(supabase: any, actorId: string, targetId: stri
     throw new Error("Forbidden: target user is not in your department");
   }
 }
+
+export const adminDeleteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ user_id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    if (data.user_id === context.userId) throw new Error("You cannot delete your own account");
+    await supabaseAdmin.from("messages").delete().or(`sender_id.eq.${data.user_id},recipient_id.eq.${data.user_id}`);
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.user_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

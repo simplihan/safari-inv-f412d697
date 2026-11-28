@@ -11,21 +11,32 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Search, Pencil, UserPlus, KeyRound, Power, ShieldCheck } from "lucide-react";
+import { Search, Pencil, UserPlus, KeyRound, Power, ShieldCheck, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { adminCreateUser, adminResetPassword, adminSetRoles, adminSetActive, adminUpdateEmail, adminSetDepartments } from "@/lib/users.functions";
+import { adminCreateUser, adminResetPassword, adminSetRoles, adminSetActive, adminUpdateEmail, adminSetDepartments, adminDeleteUser } from "@/lib/users.functions";
 import { useDepartments } from "@/hooks/use-departments";
 
 export const Route = createFileRoute("/app/staff")({ component: Staff });
 
 function Staff() {
-  const { isAdmin, isManager, isSupervisor, hasPermission, hasEditPermission } = useAuth();
+  const { user, isAdmin, isManager, isSupervisor, hasPermission, hasEditPermission } = useAuth();
   const allowed = isAdmin || isManager || (!isSupervisor && hasPermission("manage_staff"));
 
   const canEdit = isAdmin || isManager || hasEditPermission("manage_staff");
   const setActive = useServerFn(adminSetActive);
+  const deleteUserFn = useServerFn(adminDeleteUser);
+  const deleteUser = async (r: any) => {
+    if (!window.confirm(`Permanently delete ${r.full_name}? All their activity, chats and history will be removed. This cannot be undone.`)) return;
+    try {
+      await deleteUserFn({ data: { user_id: r.id } });
+      toast.success(`${r.full_name} deleted`);
+      load();
+    } catch (e) {
+      toast.error(friendlyError(e));
+    }
+  };
   const [rows, setRows] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<any | null>(null);
@@ -126,6 +137,11 @@ function Staff() {
                 >
                   <Power className="h-4 w-4 mr-1" />
                   {r.status === "approved" ? "Deactivate" : "Activate"}
+                </Button>
+              )}
+              {isAdmin && r.id !== user?.id && (
+                <Button size="sm" variant="destructive" onClick={() => deleteUser(r)}>
+                  <Trash2 className="h-4 w-4 mr-1" /> Delete
                 </Button>
               )}
             </CardContent>
