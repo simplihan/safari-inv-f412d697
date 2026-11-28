@@ -273,6 +273,7 @@ async function requireStaffEditor(supabase: any, actorId: string, targetId: stri
   const roles = ((roleRows ?? []) as { role: string }[]).map((r) => r.role);
   if (roles.includes("admin")) return;
 
+  let globalScope = false;
   let allowed = roles.includes("manager") || roles.includes("supervisor");
   if (!allowed) {
     const { data: perms } = await supabase
@@ -291,7 +292,7 @@ async function requireStaffEditor(supabase: any, actorId: string, targetId: stri
           p.permission === "view_pending" ||
           p.permission === "cross_department")
     );
-    if (global) return;
+    globalScope = global;
   }
 
   const { data: targetAdmin } = await supabaseAdmin
@@ -301,6 +302,7 @@ async function requireStaffEditor(supabase: any, actorId: string, targetId: stri
     .eq("role", "admin")
     .maybeSingle();
   if (targetAdmin) throw new Error("Forbidden: cannot modify an admin account");
+  if (globalScope) return;
 
   const [{ data: actorDepts }, { data: targetDepts }, { data: actorProfile }, { data: targetProfile }] =
     await Promise.all([
